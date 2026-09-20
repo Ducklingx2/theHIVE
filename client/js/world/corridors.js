@@ -1,163 +1,137 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 
-const CORRIDOR_HEIGHT = 6;
-const CORRIDOR_WIDTH = 5;
-
-function createWall(length, material) {
-    const wall = new THREE.Mesh(
-        new THREE.BoxGeometry(
-            length,
-            CORRIDOR_HEIGHT,
-            0.7
-        ),
-        material
-    );
-
-    wall.castShadow = true;
-    wall.receiveShadow = true;
-
-    return wall;
-}
-
-export function createCorridor(scene, a, b, materials, options = {}) {
+export function createCorridor(
+    scene,
+    from,
+    to,
+    width,
+    materials
+) {
     const group = new THREE.Group();
 
-    const start = new THREE.Vector3(a.x, 0, a.z);
-    const end = new THREE.Vector3(b.x, 0, b.z);
+    const start = new THREE.Vector3(
+        from.x,
+        0,
+        from.z
+    );
+
+    const end = new THREE.Vector3(
+        to.x,
+        0,
+        to.z
+    );
 
     const direction = new THREE.Vector3()
         .subVectors(end, start);
 
     const length = direction.length();
-    const angle = Math.atan2(direction.z, direction.x);
+
+    const angle = Math.atan2(
+        direction.x,
+        direction.z
+    );
 
     const midpoint = new THREE.Vector3()
         .addVectors(start, end)
         .multiplyScalar(0.5);
 
-    /*
-     * Floor
-     */
+    group.position.copy(midpoint);
+    group.rotation.y = angle;
+
     const floor = new THREE.Mesh(
         new THREE.BoxGeometry(
-            length,
-            0.25,
-            CORRIDOR_WIDTH
+            width,
+            0.3,
+            length
         ),
         materials.corridorFloor
     );
 
-    floor.position.copy(midpoint);
-    floor.position.y = 0.12;
-
-    floor.rotation.y = angle;
-
-    floor.receiveShadow = true;
+    floor.position.y = -0.15;
+    floor.name = "corridor-floor";
 
     group.add(floor);
 
-    /*
-     * Ceiling
-     */
     const ceiling = new THREE.Mesh(
         new THREE.BoxGeometry(
-            length,
-            0.25,
-            CORRIDOR_WIDTH
+            width,
+            0.3,
+            length
         ),
         materials.ceiling
     );
 
-    ceiling.position.copy(midpoint);
-    ceiling.position.y = CORRIDOR_HEIGHT;
-
-    ceiling.rotation.y = angle;
+    ceiling.position.y = 6;
+    ceiling.name = "corridor-ceiling";
 
     group.add(ceiling);
 
-    /*
-     * Walls
-     */
-    const leftWall = createWall(
-        length,
+    const leftWall = new THREE.Mesh(
+        new THREE.BoxGeometry(
+            0.55,
+            6,
+            length
+        ),
         materials.corridorWall
     );
-
-    const rightWall = createWall(
-        length,
-        materials.corridorWall
-    );
-
-    const sideOffset = CORRIDOR_WIDTH / 2;
 
     leftWall.position.set(
-        0,
-        CORRIDOR_HEIGHT / 2,
-        sideOffset
+        -width / 2,
+        3,
+        0
+    );
+
+    leftWall.name = "corridor-left-wall";
+
+    group.add(leftWall);
+
+    const rightWall = new THREE.Mesh(
+        new THREE.BoxGeometry(
+            0.55,
+            6,
+            length
+        ),
+        materials.corridorWall
     );
 
     rightWall.position.set(
-        0,
-        CORRIDOR_HEIGHT / 2,
-        -sideOffset
+        width / 2,
+        3,
+        0
     );
 
-    leftWall.position.applyAxisAngle(
-        new THREE.Vector3(0, 1, 0),
-        angle
+    rightWall.name = "corridor-right-wall";
+
+    group.add(rightWall);
+
+    // Ceiling lights
+    const lightCount = Math.max(
+        2,
+        Math.floor(length / 5)
     );
-
-    rightWall.position.applyAxisAngle(
-        new THREE.Vector3(0, 1, 0),
-        angle
-    );
-
-    leftWall.position.add(midpoint);
-    rightWall.position.add(midpoint);
-
-    leftWall.rotation.y = angle;
-    rightWall.rotation.y = angle;
-
-    group.add(leftWall, rightWall);
-
-    /*
-     * Ceiling lights
-     */
-    const lightCount = Math.max(2, Math.floor(length / 7));
 
     for (let i = 0; i < lightCount; i++) {
-        const t = (i + 0.5) / lightCount;
+        const t =
+            (i + 0.5) / lightCount;
 
-        const position = new THREE.Vector3().lerpVectors(
-            start,
-            end,
-            t
-        );
-
-        const light = new THREE.PointLight(
-            0xffb52e,
-            1.2,
-            9
-        );
-
-        light.position.set(
-            position.x,
-            CORRIDOR_HEIGHT - 0.7,
-            position.z
-        );
-
-        light.castShadow = true;
-
-        group.add(light);
-
-        const fixture = new THREE.Mesh(
-            new THREE.BoxGeometry(1.2, 0.18, 0.7),
+        const light = new THREE.Mesh(
+            new THREE.BoxGeometry(
+                2.2,
+                0.12,
+                0.5
+            ),
             materials.light
         );
 
-        fixture.position.copy(light.position);
+        light.position.set(
+            0,
+            5.78,
+            -length / 2 + length * t
+        );
 
-        group.add(fixture);
+        light.name = "corridor-light";
+
+        group.add(light);
     }
 
     scene.add(group);
@@ -166,9 +140,7 @@ export function createCorridor(scene, a, b, materials, options = {}) {
         group,
         start,
         end,
-        width: CORRIDOR_WIDTH,
+        width,
         length
     };
 }
-
-export { CORRIDOR_WIDTH };
