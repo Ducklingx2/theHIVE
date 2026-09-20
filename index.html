@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>THE HIVE</title>
+
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+
+    <!-- =========================================================
+         GAME
+    ========================================================== -->
+
+    <main id="game">
+
+        <!-- Three.js canvas is inserted here -->
+
+        <!-- =====================================================
+             TOP HUD
+        ====================================================== -->
+
+        <section id="top-hud">
+
+            <div class="hive-brand">
+                <div class="brand-hex">
+                    H
+                </div>
+
+                <div class="brand-text">
+                    <span class="brand-title">THE HIVE</span>
+                    <span class="brand-subtitle">SOCIAL DEDUCTION</span>
+                </div>
+            </div>
+
+
+            <div id="phase-panel">
+
+                <div class="phase-label">
+                    CURRENT PHASE
+                </div>
+
+                <div id="phase-name">
+                    INTRUSION
+                </div>
+
+                <div id="phase-description">
+                    Find the Wasp.
+                </div>
+
+            </div>
+
+
+            <div id="timer-panel">
+
+                <div class="timer-label">
+                    HIVE TIME
+                </div>
+
+                <div id="timer">
+                    05:00
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             PLAYER STATUS
+        ====================================================== -->
+
+        <section id="player-panel">
+
+            <div class="panel-hex"></div>
+
+            <div class="player-info">
+
+                <div class="player-label">
+                    YOU ARE
+                </div>
+
+                <div id="role-name">
+                    BEE
+                </div>
+
+            </div>
+
+
+            <div class="sting-section">
+
+                <div class="sting-label">
+                    STINGS
+                </div>
+
+                <div id="sting-container">
+
+                    <div class="sting active"></div>
+                    <div class="sting empty"></div>
+                    <div class="sting empty"></div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             ACTIVE CHAMBER
+        ====================================================== -->
+
+        <section id="chamber-panel">
+
+            <div class="chamber-icon">
+                ⬡
+            </div>
+
+            <div>
+
+                <div class="chamber-label">
+                    ACTIVE CHAMBER
+                </div>
+
+                <div id="active-chamber">
+                    CENTRAL HIVE
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             CROSSHAIR
+        ====================================================== -->
+
+        <div id="crosshair">
+
+            <span class="crosshair-line horizontal"></span>
+            <span class="crosshair-line vertical"></span>
+
+            <span class="crosshair-center"></span>
+
+        </div>
+
+
+        <!-- =====================================================
+             INTERACTION
+        ====================================================== -->
+
+        <div id="interaction">
+
+            <div id="interaction-key">
+                E
+            </div>
+
+            <div id="interaction-text">
+                INTERACT
+            </div>
+
+        </div>
+
+
+        <!-- =====================================================
+             BOTTOM HUD
+        ====================================================== -->
+
+        <section id="bottom-hud">
+
+            <div class="controls">
+
+                <span class="control">
+                    <b>W</b>
+                    MOVE
+                </span>
+
+                <span class="control">
+                    <b>A</b>
+                    MOVE
+                </span>
+
+                <span class="control">
+                    <b>S</b>
+                    MOVE
+                </span>
+
+                <span class="control">
+                    <b>D</b>
+                    MOVE
+                </span>
+
+                <span class="control">
+                    <b>SHIFT</b>
+                    SPRINT
+                </span>
+
+                <span class="control">
+                    <b>SPACE</b>
+                    ACTION
+                </span>
+
+            </div>
+
+
+            <div class="status-indicator">
+
+                <span class="status-dot"></span>
+
+                HIVE CONNECTION:
+                <strong>LOCAL</strong>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             START SCREEN
+        ====================================================== -->
+
+        <section id="start-screen">
+
+            <div class="start-background"></div>
+
+            <div class="start-content">
+
+                <div class="start-symbol">
+                    ⬡
+                </div>
+
+                <div class="start-kicker">
+                    WELCOME TO
+                </div>
+
+                <h1>
+                    THE HIVE
+                </h1>
+
+                <p class="start-tagline">
+                    Everyone is a bee.
+                    <br>
+                    One of you isn't.
+                </p>
+
+
+                <div class="start-rule">
+
+                    <div class="rule-cell"></div>
+                    <div class="rule-cell"></div>
+                    <div class="rule-cell"></div>
+
+                </div>
+
+
+                <button id="start-button">
+                    ENTER THE HIVE
+                </button>
+
+
+                <div class="start-warning">
+                    TRUST NO ONE
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             DEATH / RESULT SCREEN
+        ====================================================== -->
+
+        <section id="result-screen" class="hidden">
+
+            <div class="result-content">
+
+                <div id="result-symbol">
+                    ⬡
+                </div>
+
+                <div id="result-kicker">
+                    HIVE STATUS
+                </div>
+
+                <h2 id="result-title">
+                    GAME OVER
+                </h2>
+
+                <p id="result-description">
+                    The Hive has fallen.
+                </p>
+
+                <button id="restart-button">
+                    RETURN TO HIVE
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- =====================================================
+             DEBUG / DEVELOPMENT
+        ====================================================== -->
+
+        <div id="debug-panel">
+
+            <div>THE HIVE // DEV BUILD</div>
+            <div id="debug-position">
+                X: 0.0 | Z: 0.0
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <!-- =========================================================
+         THREE.JS
+    ========================================================== -->
+
+    <script type="module" src="./main.js"></script>
+
+</body>
+</html>
