@@ -66,42 +66,31 @@ export class Game {
     }
 
     setupRenderer() {
-        this.renderer =
-            new THREE.WebGLRenderer({
-                antialias: true,
-                powerPreference: "high-performance"
-            });
+    this.renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        powerPreference: "high-performance"
+    });
 
-        this.renderer.setPixelRatio(
-            Math.min(
-                window.devicePixelRatio,
-                2
-            )
-        );
+    this.renderer.setPixelRatio(
+        Math.min(window.devicePixelRatio, 2)
+    );
 
-        this.renderer.setSize(
-            window.innerWidth,
-            window.innerHeight
-        );
+    this.renderer.setSize(
+        window.innerWidth,
+        window.innerHeight
+    );
 
-        this.renderer.shadowMap.enabled = true;
+    // IMPORTANT:
+    // Disable shadow maps for compatibility.
+    this.renderer.shadowMap.enabled = false;
 
-        this.renderer.shadowMap.type =
-            THREE.PCFSoftShadowMap;
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
 
-        this.renderer.outputColorSpace =
-            THREE.SRGBColorSpace;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.15;
 
-        this.renderer.toneMapping =
-            THREE.ACESFilmicToneMapping;
-
-        this.renderer.toneMappingExposure =
-            1.15;
-
-        this.container.appendChild(
-            this.renderer.domElement
-        );
-    }
+    this.container.appendChild(this.renderer.domElement);
+}
 
     setupWorld() {
         this.world =
