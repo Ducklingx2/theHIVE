@@ -1,336 +1,188 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 
+import { Character } from "./character.js";
+import { CharacterAnimation } from "./animation.js";
 
 export class Player {
-
-    constructor(game) {
-
+    constructor(game, options = {}) {
         this.game = game;
 
-        this.group =
-            new THREE.Group();
-
-        this.speed = 7;
-
-        this.sprintSpeed = 11;
-
-        this.radius = 0.65;
-
-        this.velocity =
-            new THREE.Vector3();
-
-        this.direction =
-            new THREE.Vector3();
-
-        this.createBody();
-
-        this.group.position.set(
+        this.position = new THREE.Vector3(
             0,
             0,
-            0
+            7
+        );
+
+        this.velocity = new THREE.Vector3();
+
+        this.walkSpeed = 5.5;
+        this.sprintSpeed = 8.5;
+
+        this.rotationSpeed = 10;
+
+        this.keys = {
+            forward: false,
+            backward: false,
+            left: false,
+            right: false,
+            sprint: false
+        };
+
+        this.moving = false;
+
+        this.character =
+            new Character(options);
+
+        this.animation =
+            new CharacterAnimation(
+                this.character
+            );
+
+        this.object =
+            this.character.getObject();
+
+        this.object.position.copy(
+            this.position
+        );
+
+        this.game.scene.add(
+            this.object
+        );
+
+        this.setupInput();
+    }
+
+    setupInput() {
+        window.addEventListener(
+            "keydown",
+            event => {
+                switch (event.code) {
+                    case "KeyW":
+                    case "ArrowUp":
+                        this.keys.forward = true;
+                        break;
+
+                    case "KeyS":
+                    case "ArrowDown":
+                        this.keys.backward = true;
+                        break;
+
+                    case "KeyA":
+                    case "ArrowLeft":
+                        this.keys.left = true;
+                        break;
+
+                    case "KeyD":
+                    case "ArrowRight":
+                        this.keys.right = true;
+                        break;
+
+                    case "ShiftLeft":
+                    case "ShiftRight":
+                        this.keys.sprint = true;
+                        break;
+                }
+            }
+        );
+
+        window.addEventListener(
+            "keyup",
+            event => {
+                switch (event.code) {
+                    case "KeyW":
+                    case "ArrowUp":
+                        this.keys.forward = false;
+                        break;
+
+                    case "KeyS":
+                    case "ArrowDown":
+                        this.keys.backward = false;
+                        break;
+
+                    case "KeyA":
+                    case "ArrowLeft":
+                        this.keys.left = false;
+                        break;
+
+                    case "KeyD":
+                    case "ArrowRight":
+                        this.keys.right = false;
+                        break;
+
+                    case "ShiftLeft":
+                    case "ShiftRight":
+                        this.keys.sprint = false;
+                        break;
+                }
+            }
         );
     }
 
+    update(delta) {
+        const input = new THREE.Vector3();
 
-    createBody() {
-
-        // ---------------------------------------------------------
-        // BODY
-        // ---------------------------------------------------------
-
-        const bodyGeometry =
-            new THREE.CylinderGeometry(
-                0.55,
-                0.7,
-                1.2,
-                6
-            );
-
-        const bodyMaterial =
-            new THREE.MeshStandardMaterial({
-                color: 0xf2a51c,
-                emissive: 0x3b1c00,
-                emissiveIntensity: 0.35,
-                roughness: 0.5
-            });
-
-        const body =
-            new THREE.Mesh(
-                bodyGeometry,
-                bodyMaterial
-            );
-
-        body.position.y =
-            0.85;
-
-        body.castShadow = true;
-
-        this.group.add(body);
-
-
-        // ---------------------------------------------------------
-        // HEAD
-        // ---------------------------------------------------------
-
-        const headGeometry =
-            new THREE.CylinderGeometry(
-                0.55,
-                0.55,
-                0.55,
-                6
-            );
-
-        const headMaterial =
-            new THREE.MeshStandardMaterial({
-                color: 0xffc43d,
-                roughness: 0.45
-            });
-
-        const head =
-            new THREE.Mesh(
-                headGeometry,
-                headMaterial
-            );
-
-        head.position.y =
-            1.7;
-
-        head.castShadow = true;
-
-        this.group.add(head);
-
-
-        // ---------------------------------------------------------
-        // VISOR
-        // ---------------------------------------------------------
-
-        const visorGeometry =
-            new THREE.BoxGeometry(
-                0.65,
-                0.18,
-                0.08
-            );
-
-        const visorMaterial =
-            new THREE.MeshStandardMaterial({
-                color: 0x090604,
-                emissive: 0xffa31a,
-                emissiveIntensity: 0.8,
-                metalness: 0.7,
-                roughness: 0.2
-            });
-
-        const visor =
-            new THREE.Mesh(
-                visorGeometry,
-                visorMaterial
-            );
-
-        visor.position.set(
-            0,
-            1.75,
-            -0.5
-        );
-
-        this.group.add(visor);
-
-
-        // ---------------------------------------------------------
-        // HEX BADGE
-        // ---------------------------------------------------------
-
-        const badgeGeometry =
-            new THREE.CylinderGeometry(
-                0.22,
-                0.22,
-                0.08,
-                6
-            );
-
-        const badgeMaterial =
-            new THREE.MeshStandardMaterial({
-                color: 0xffd15a,
-                emissive: 0xb76500,
-                emissiveIntensity: 1
-            });
-
-        const badge =
-            new THREE.Mesh(
-                badgeGeometry,
-                badgeMaterial
-            );
-
-        badge.rotation.x =
-            Math.PI / 2;
-
-        badge.position.set(
-            0,
-            1.05,
-            -0.68
-        );
-
-        this.group.add(badge);
-
-
-        // ---------------------------------------------------------
-        // SHADOW / BASE
-        // ---------------------------------------------------------
-
-        const baseGeometry =
-            new THREE.CylinderGeometry(
-                0.75,
-                0.75,
-                0.08,
-                6
-            );
-
-        const baseMaterial =
-            new THREE.MeshBasicMaterial({
-                color: 0x000000,
-                transparent: true,
-                opacity: 0.35
-            });
-
-        const base =
-            new THREE.Mesh(
-                baseGeometry,
-                baseMaterial
-            );
-
-        base.position.y =
-            0.05;
-
-        this.group.add(base);
-    }
-
-
-    update(
-        delta,
-        keys
-    ) {
-
-        this.direction.set(
-            0,
-            0,
-            0
-        );
-
-
-        // ---------------------------------------------------------
-        // INPUT
-        // ---------------------------------------------------------
-
-        if (keys.KeyW) {
-
-            this.direction.z -= 1;
+        if (this.keys.forward) {
+            input.z -= 1;
         }
 
-        if (keys.KeyS) {
-
-            this.direction.z += 1;
+        if (this.keys.backward) {
+            input.z += 1;
         }
 
-        if (keys.KeyA) {
-
-            this.direction.x -= 1;
+        if (this.keys.left) {
+            input.x -= 1;
         }
 
-        if (keys.KeyD) {
-
-            this.direction.x += 1;
+        if (this.keys.right) {
+            input.x += 1;
         }
 
+        this.moving =
+            input.lengthSq() > 0;
 
-        // ---------------------------------------------------------
-        // NORMALIZE
-        // ---------------------------------------------------------
-
-        if (
-            this.direction.lengthSq() > 0
-        ) {
-
-            this.direction.normalize();
+        if (this.moving) {
+            input.normalize();
         }
-
-
-        // ---------------------------------------------------------
-        // SPEED
-        // ---------------------------------------------------------
-
-        const sprinting =
-            keys.ShiftLeft ||
-            keys.ShiftRight;
 
         const speed =
-            sprinting
+            this.keys.sprint
                 ? this.sprintSpeed
-                : this.speed;
+                : this.walkSpeed;
 
-
-        // ---------------------------------------------------------
-        // MOVEMENT
-        // ---------------------------------------------------------
-
-        this.velocity.copy(
-            this.direction
-        );
-
-        this.velocity.multiplyScalar(
-            speed * delta
-        );
-
-
-        const nextX =
-            this.group.position.x +
-            this.velocity.x;
-
-        const nextZ =
-            this.group.position.z +
-            this.velocity.z;
-
-
-        // ---------------------------------------------------------
-        // WORLD BOUNDARY
-        // ---------------------------------------------------------
-
-        const maxDistance = 62;
-
-        const distance =
-            Math.sqrt(
-                nextX * nextX +
-                nextZ * nextZ
+        const movement =
+            input.multiplyScalar(
+                speed * delta
             );
 
-        if (
-            distance <
-            maxDistance
-        ) {
-
-            this.group.position.x =
-                nextX;
-
-            this.group.position.z =
-                nextZ;
+        /*
+         * World collision.
+         */
+        if (this.game.world?.collision) {
+            this.position =
+                this.game.world.collision
+                    .resolveMovement(
+                        this.position,
+                        movement
+                    );
+        } else {
+            this.position.add(
+                movement
+            );
         }
 
-
-        // ---------------------------------------------------------
-        // ROTATION
-        // ---------------------------------------------------------
-
-        if (
-            this.direction.lengthSq() > 0
-        ) {
-
+        /*
+         * Character rotation.
+         */
+        if (this.moving) {
             const targetRotation =
                 Math.atan2(
-                    this.direction.x,
-                    this.direction.z
+                    movement.x,
+                    movement.z
                 );
 
             let difference =
                 targetRotation -
-                this.group.rotation.y;
+                this.object.rotation.y;
 
             difference =
                 Math.atan2(
@@ -338,46 +190,27 @@ export class Player {
                     Math.cos(difference)
                 );
 
-            this.group.rotation.y +=
-                difference * 0.18;
+            this.object.rotation.y +=
+                difference *
+                Math.min(
+                    delta *
+                    this.rotationSpeed,
+                    1
+                );
         }
 
+        this.object.position.copy(
+            this.position
+        );
 
-        // ---------------------------------------------------------
-        // WALKING BOB
-        // ---------------------------------------------------------
+        this.animation.update(
+            delta,
+            speed,
+            this.moving
+        );
+    }
 
-        if (
-            this.direction.lengthSq() > 0
-        ) {
-
-            const bob =
-                Math.sin(
-                    performance.now() * 0.012
-                ) * 0.035;
-
-            this.group.position.y =
-                bob;
-        }
-        else {
-
-            this.group.position.y = 0;
-        }
-
-
-        // ---------------------------------------------------------
-        // DEBUG
-        // ---------------------------------------------------------
-
-        const debug =
-            document.getElementById(
-                "debug-position"
-            );
-
-        if (debug) {
-
-            debug.textContent =
-                `X: ${this.group.position.x.toFixed(1)} | Z: ${this.group.position.z.toFixed(1)}`;
-        }
+    getPosition() {
+        return this.position.clone();
     }
 }
