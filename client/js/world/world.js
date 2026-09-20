@@ -318,4 +318,15 @@ export class World {
 
         return null;
     }
+
+    getActiveRooms() {
+    // For now, every constructed room is considered active.
+    // The phase/sabotage system can later change this dynamically.
+    return this.rooms;
+    }
+
+    update(delta) {
+    // World-level animation/update hook.
+    // Props and environmental animations can be added here later.
+    }
 }
