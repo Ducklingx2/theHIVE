@@ -2,305 +2,425 @@ import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.m
 
 function box(
     group,
-    size,
-    position,
+    collision,
+    x,
+    y,
+    z,
+    width,
+    height,
+    depth,
     material,
-    rotation = 0
+    name = "prop"
 ) {
+    const geometry = new THREE.BoxGeometry(
+        width,
+        height,
+        depth
+    );
+
     const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(
-            size.x,
-            size.y,
-            size.z
-        ),
+        geometry,
         material
     );
 
-    mesh.position.copy(position);
-    mesh.rotation.y = rotation;
+    mesh.position.set(x, y, z);
 
     mesh.castShadow = false;
     mesh.receiveShadow = false;
 
     group.add(mesh);
+
+    collision.addBoxCollider(
+        new THREE.Vector3(x, y, z),
+        new THREE.Vector3(width, depth, depth),
+        {
+            yMin: 0,
+            yMax: height,
+            name
+        }
+    );
 
     return mesh;
 }
 
 function cylinder(
     group,
+    collision,
+    x,
+    y,
+    z,
     radius,
     height,
-    position,
-    material
+    material,
+    name = "prop"
 ) {
+    const geometry = new THREE.CylinderGeometry(
+        radius,
+        radius,
+        height,
+        16
+    );
+
     const mesh = new THREE.Mesh(
-        new THREE.CylinderGeometry(
-            radius,
-            radius,
-            height,
-            8
-        ),
+        geometry,
         material
     );
 
-    mesh.position.copy(position);
+    mesh.position.set(x, y, z);
 
     mesh.castShadow = false;
     mesh.receiveShadow = false;
 
     group.add(mesh);
 
+    collision.addCylinderCollider(
+        new THREE.Vector3(x, y, z),
+        radius,
+        {
+            yMin: 0,
+            yMax: height,
+            name
+        }
+    );
+
     return mesh;
 }
 
-function createCrate(group, x, z, materials) {
-    const crate = box(
-        group,
-        new THREE.Vector3(2, 1.6, 2),
-        new THREE.Vector3(x, 0.8, z),
-        materials.wood
-    );
-
-    const bandMaterial = materials.darkWood;
-
+function createCrate(
+    group,
+    collision,
+    x,
+    z,
+    materials,
+    size = 1.6
+) {
     box(
         group,
-        new THREE.Vector3(2.1, 0.18, 0.18),
-        new THREE.Vector3(x, 0.8, z - 0.9),
-        bandMaterial
+        collision,
+        x,
+        size / 2,
+        z,
+        size,
+        size,
+        size,
+        materials.wood,
+        "crate"
     );
-
-    box(
-        group,
-        new THREE.Vector3(2.1, 0.18, 0.18),
-        new THREE.Vector3(x, 0.8, z + 0.9),
-        bandMaterial
-    );
-
-    return crate;
 }
 
-function createPlant(group, x, z, materials) {
-    const stem = cylinder(
+function createPlant(
+    group,
+    collision,
+    x,
+    z,
+    materials
+) {
+    cylinder(
         group,
+        collision,
+        x,
+        0.45,
+        z,
+        0.45,
+        0.9,
+        materials.wood,
+        "plant-pot"
+    );
+
+    cylinder(
+        group,
+        collision,
+        x,
+        1.35,
+        z,
         0.18,
-        2.2,
-        new THREE.Vector3(x, 1.1, z),
-        materials.plantStem
+        1.0,
+        materials.plantStem,
+        "plant-stem"
     );
 
-    for (let i = 0; i < 5; i++) {
-        const angle = (i / 5) * Math.PI * 2;
+    const leaves = new THREE.Mesh(
+        new THREE.IcosahedronGeometry(0.75, 1),
+        materials.plant
+    );
 
-        const leaf = new THREE.Mesh(
-            new THREE.SphereGeometry(
-                0.45,
-                8,
-                6
-            ),
-            materials.plant
-        );
+    leaves.position.set(x, 2.0, z);
 
-        leaf.scale.set(
-            1.6,
-            0.35,
-            0.8
-        );
+    group.add(leaves);
 
-        leaf.position.set(
-            x + Math.cos(angle) * 0.65,
-            1.8 + Math.sin(i) * 0.2,
-            z + Math.sin(angle) * 0.65
-        );
-
-        group.add(leaf);
-    }
+    collision.addCylinderCollider(
+        new THREE.Vector3(x, 2, z),
+        0.75,
+        {
+            yMin: 0,
+            yMax: 3,
+            name: "plant"
+        }
+    );
 }
 
-function createMachine(group, x, z, materials) {
+function createMachine(
+    group,
+    collision,
+    x,
+    z,
+    materials
+) {
     box(
         group,
-        new THREE.Vector3(2.8, 2.4, 2),
-        new THREE.Vector3(x, 1.2, z),
-        materials.machine
+        collision,
+        x,
+        1.2,
+        z,
+        2.2,
+        2.4,
+        1.6,
+        materials.machine,
+        "workshop-machine"
     );
 
     cylinder(
         group,
-        0.55,
+        collision,
+        x,
+        2.8,
+        z,
         0.35,
-        new THREE.Vector3(x, 2.2, z - 1.05),
-        materials.metal
+        0.7,
+        materials.metal,
+        "machine-cylinder"
+    );
+}
+
+function createWaterTank(
+    group,
+    collision,
+    x,
+    z,
+    materials
+) {
+    cylinder(
+        group,
+        collision,
+        x,
+        1.6,
+        z,
+        1.15,
+        3.2,
+        materials.waterTank,
+        "water-tank"
     );
 
     cylinder(
         group,
-        0.25,
-        2.5,
-        new THREE.Vector3(x + 0.8, 3.2, z),
-        materials.pipe
+        collision,
+        x,
+        3.35,
+        z,
+        0.5,
+        0.35,
+        materials.metal,
+        "tank-cap"
     );
 }
 
-function createWaterTank(group, x, z, materials) {
+function createQueenPlatform(
+    group,
+    collision,
+    x,
+    z,
+    materials
+) {
     cylinder(
         group,
-        2.1,
-        3.5,
-        new THREE.Vector3(x, 1.75, z),
-        materials.waterTank
+        collision,
+        x,
+        0.35,
+        z,
+        3.0,
+        0.7,
+        materials.queenPlatform,
+        "queen-platform"
     );
 
     cylinder(
         group,
-        1.75,
-        0.1,
-        new THREE.Vector3(x, 3.52, z),
-        materials.water
+        collision,
+        x,
+        1.2,
+        z,
+        1.2,
+        1.0,
+        materials.queenPlatform,
+        "queen-seat"
     );
 }
 
-function createQueenPlatform(group, materials) {
-    const platform = new THREE.Mesh(
-        new THREE.CylinderGeometry(
-            4,
-            4,
-            0.8,
-            6
-        ),
-        materials.queenPlatform
-    );
-
-    platform.position.y = 0.4;
-
-    platform.castShadow = true;
-    platform.receiveShadow = true;
-
-    group.add(platform);
-
-    const glow = new THREE.PointLight(
-        0xffc928,
-        4,
-        15
-    );
-
-    glow.position.y = 3;
-
-    group.add(glow);
-}
-
-export function decorateRoom(room, materials) {
+export function decorateRoom(
+    room,
+    materials,
+    collision
+) {
     const group = new THREE.Group();
 
-    group.position.set(
-        room.x,
-        0,
-        room.z
-    );
+    group.name = `${room.name}-Props`;
 
-    switch (room.id) {
-        case "nursery":
+    switch (room.name) {
+        case "Nursery":
+            createCrate(
+                group,
+                collision,
+                room.x - 3,
+                room.z - 2,
+                materials
+            );
 
-            for (let i = 0; i < 6; i++) {
-                createCrate(
-                    group,
-                    -3 + (i % 3) * 3,
-                    -2 + Math.floor(i / 3) * 3,
-                    materials
-                );
-            }
-
-            break;
-
-        case "garden":
-
-            for (let i = 0; i < 8; i++) {
-                const angle = i * 0.8;
-
-                createPlant(
-                    group,
-                    Math.cos(angle) * 4,
-                    Math.sin(angle) * 4,
-                    materials
-                );
-            }
+            createCrate(
+                group,
+                collision,
+                room.x + 2,
+                room.z - 3,
+                materials,
+                1.2
+            );
 
             break;
 
-        case "storage":
+        case "Garden":
+            createPlant(
+                group,
+                collision,
+                room.x - 2,
+                room.z - 2,
+                materials
+            );
 
-            for (let i = 0; i < 9; i++) {
-                createCrate(
-                    group,
-                    -3 + (i % 3) * 3,
-                    -3 + Math.floor(i / 3) * 2.5,
-                    materials
-                );
-            }
+            createPlant(
+                group,
+                collision,
+                room.x + 2,
+                room.z + 1,
+                materials
+            );
+
+            createPlant(
+                group,
+                collision,
+                room.x - 1,
+                room.z + 3,
+                materials
+            );
 
             break;
 
-        case "workshop":
+        case "Storage":
+            createCrate(
+                group,
+                collision,
+                room.x - 2,
+                room.z - 2,
+                materials
+            );
+
+            createCrate(
+                group,
+                collision,
+                room.x,
+                room.z - 2,
+                materials
+            );
+
+            createCrate(
+                group,
+                collision,
+                room.x + 2,
+                room.z - 2,
+                materials
+            );
+
+            createCrate(
+                group,
+                collision,
+                room.x + 1,
+                room.z + 1,
+                materials,
+                1.3
+            );
+
+            break;
+
+        case "Workshop":
+            createMachine(
+                group,
+                collision,
+                room.x - 2,
+                room.z - 2,
+                materials
+            );
 
             createMachine(
                 group,
-                -3,
-                0,
-                materials
-            );
-
-            createMachine(
-                group,
-                3,
-                1,
+                collision,
+                room.x + 2,
+                room.z + 1,
                 materials
             );
 
             break;
 
-        case "water":
-
+        case "Water":
             createWaterTank(
                 group,
-                -3,
-                0,
+                collision,
+                room.x - 2,
+                room.z - 1,
                 materials
             );
 
             createWaterTank(
                 group,
-                3,
-                0,
+                collision,
+                room.x + 2,
+                room.z + 2,
                 materials
             );
 
             break;
 
-        case "queen":
-
+        case "Queen":
             createQueenPlatform(
                 group,
+                collision,
+                room.x,
+                room.z,
                 materials
             );
 
             break;
 
-        case "central":
+        case "Central":
+            createCrate(
+                group,
+                collision,
+                room.x - 3,
+                room.z + 2,
+                materials,
+                1.3
+            );
 
-            for (let i = 0; i < 6; i++) {
-                const angle = i * Math.PI / 3;
-
-                createCrate(
-                    group,
-                    Math.cos(angle) * 5,
-                    Math.sin(angle) * 5,
-                    materials
-                );
-            }
+            createCrate(
+                group,
+                collision,
+                room.x + 3,
+                room.z - 2,
+                materials,
+                1.3
+            );
 
             break;
     }
 
     room.group.add(group);
+
+    return group;
 }
