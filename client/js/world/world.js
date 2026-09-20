@@ -1,512 +1,394 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 
 import {
-    createHexRoom,
-    createHexOutline,
-    createHexGlow
-} from "./hive.js";
+    createRoom
+} from "./rooms.js";
 
+import {
+    createCorridor
+} from "./corridors.js";
+
+import {
+    CollisionSystem
+} from "./collision.js";
+
+import {
+    createHiveLighting
+} from "./lighting.js";
+
+import {
+    decorateRoom
+} from "./props.js";
 
 export class World {
-
     constructor(game) {
-
         this.game = game;
-
-        this.group =
-            new THREE.Group();
+        this.scene = game.scene;
 
         this.rooms = [];
-
-        this.colliders = [];
-
-        this.time = 0;
+        this.corridors = [];
 
         this.createMaterials();
-        this.createFloor();
+        this.createGround();
         this.createRooms();
-        this.createHoneycombDecor();
+        this.createCorridors();
+
+        this.lighting =
+            createHiveLighting(this.scene);
+
+        this.decorate();
+
+        this.collision =
+            new CollisionSystem(this);
     }
 
-
     createMaterials() {
-
         this.materials = {
 
             floor: new THREE.MeshStandardMaterial({
-                color: 0x140b06,
-                roughness: 0.92,
-                metalness: 0.05
+                color: 0x24140a,
+                roughness: 0.82
             }),
 
-            room: new THREE.MeshStandardMaterial({
-                color: 0x261308,
-                roughness: 0.78,
-                metalness: 0.08
+            centralFloor: new THREE.MeshStandardMaterial({
+                color: 0x38200d,
+                roughness: 0.72
             }),
 
-            roomInner: new THREE.MeshStandardMaterial({
-                color: 0x3b1d0a,
-                roughness: 0.7,
-                metalness: 0.05
+            gardenFloor: new THREE.MeshStandardMaterial({
+                color: 0x33230e,
+                roughness: 0.78
+            }),
+
+            waterFloor: new THREE.MeshStandardMaterial({
+                color: 0x182019,
+                roughness: 0.7
             }),
 
             wall: new THREE.MeshStandardMaterial({
-                color: 0x6b350b,
-                roughness: 0.62,
-                metalness: 0.15
+                color: 0x5a3213,
+                roughness: 0.78
             }),
 
-            gold: new THREE.MeshStandardMaterial({
-                color: 0xf4a51c,
-                emissive: 0x8c4b00,
-                emissiveIntensity: 1.5,
-                roughness: 0.38,
-                metalness: 0.35
+            darkWall: new THREE.MeshStandardMaterial({
+                color: 0x321a0a,
+                roughness: 0.9
             }),
 
-            darkGold: new THREE.MeshStandardMaterial({
-                color: 0x7d430b,
-                emissive: 0x301500,
+            ceiling: new THREE.MeshStandardMaterial({
+                color: 0x180b05,
+                roughness: 1
+            }),
+
+            corridorFloor: new THREE.MeshStandardMaterial({
+                color: 0x2d1809,
+                roughness: 0.8
+            }),
+
+            corridorWall: new THREE.MeshStandardMaterial({
+                color: 0x48270e,
+                roughness: 0.85
+            }),
+
+            doorFrame: new THREE.MeshStandardMaterial({
+                color: 0xd28a17,
+                metalness: 0.25,
+                roughness: 0.5
+            }),
+
+            wood: new THREE.MeshStandardMaterial({
+                color: 0x75451d,
+                roughness: 0.8
+            }),
+
+            darkWood: new THREE.MeshStandardMaterial({
+                color: 0x301607,
+                roughness: 0.9
+            }),
+
+            machine: new THREE.MeshStandardMaterial({
+                color: 0x35302a,
+                metalness: 0.65,
+                roughness: 0.4
+            }),
+
+            metal: new THREE.MeshStandardMaterial({
+                color: 0x77716a,
+                metalness: 0.8,
+                roughness: 0.3
+            }),
+
+            pipe: new THREE.MeshStandardMaterial({
+                color: 0xc47b18,
+                metalness: 0.55,
+                roughness: 0.38
+            }),
+
+            plant: new THREE.MeshStandardMaterial({
+                color: 0x71832d,
+                roughness: 0.9
+            }),
+
+            plantStem: new THREE.MeshStandardMaterial({
+                color: 0x394719,
+                roughness: 0.9
+            }),
+
+            waterTank: new THREE.MeshStandardMaterial({
+                color: 0x5b4a34,
+                metalness: 0.3,
+                roughness: 0.55
+            }),
+
+            water: new THREE.MeshStandardMaterial({
+                color: 0x7cc7c3,
+                emissive: 0x163d3b,
                 emissiveIntensity: 0.5,
-                roughness: 0.6
+                roughness: 0.2
+            }),
+
+            queenPlatform: new THREE.MeshStandardMaterial({
+                color: 0xd89519,
+                metalness: 0.25,
+                roughness: 0.4
+            }),
+
+            light: new THREE.MeshStandardMaterial({
+                color: 0xffc34a,
+                emissive: 0xff9d00,
+                emissiveIntensity: 3
             })
         };
     }
 
+    createGround() {
+        const ground = new THREE.Mesh(
+            new THREE.CircleGeometry(65, 64),
+            new THREE.MeshStandardMaterial({
+                color: 0x080403,
+                roughness: 1
+            })
+        );
 
-    createFloor() {
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -0.08;
 
-        const geometry =
-            new THREE.CircleGeometry(
-                75,
-                64
-            );
+        ground.receiveShadow = true;
 
-        const floor =
-            new THREE.Mesh(
-                geometry,
-                this.materials.floor
-            );
+        this.scene.add(ground);
 
-        floor.rotation.x =
-            -Math.PI / 2;
+        /*
+         * Outer Hive boundary.
+         */
+        const ring = new THREE.Mesh(
+            new THREE.RingGeometry(
+                62,
+                63,
+                6
+            ),
+            new THREE.MeshBasicMaterial({
+                color: 0xffa914,
+                transparent: true,
+                opacity: 0.25,
+                side: THREE.DoubleSide
+            })
+        );
 
-        floor.receiveShadow = true;
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = 0.01;
 
-        this.group.add(floor);
-
-
-        // Large honeycomb floor cells
-
-        for (
-            let x = -60;
-            x <= 60;
-            x += 8.5
-        ) {
-
-            for (
-                let z = -60;
-                z <= 60;
-                z += 7.4
-            ) {
-
-                const offset =
-                    Math.round(
-                        (z + 60) / 7.4
-                    ) % 2 === 0
-                        ? 0
-                        : 4.25;
-
-                const cell =
-                    createHexGlow(
-                        3.8,
-                        0x7b3e08
-                    );
-
-                cell.position.set(
-                    x + offset,
-                    0.015,
-                    z
-                );
-
-                cell.material.opacity = 0.06;
-
-                this.group.add(cell);
-            }
-        }
+        this.scene.add(ring);
     }
 
-
     createRooms() {
-
         const roomData = [
 
             {
-                name: "NURSERY",
+                id: "nursery",
+                name: "Nursery",
                 x: 0,
-                z: -27,
+                z: -28,
                 radius: 9,
-                active: false
+                wall: "wall",
+                floor: "floor",
+                openings: [1, 2],
+                glow: 0xffb82e
             },
 
             {
-                name: "GARDEN",
-                x: -18,
-                z: -13,
+                id: "garden",
+                name: "Garden",
+                x: -19,
+                z: -14,
                 radius: 9,
-                active: true
+                wall: "wall",
+                floor: "gardenFloor",
+                openings: [0, 2, 4],
+                glow: 0xd4a932
             },
 
             {
-                name: "STORAGE",
-                x: 18,
-                z: -13,
+                id: "storage",
+                name: "Storage",
+                x: 19,
+                z: -14,
                 radius: 9,
-                active: false
+                wall: "darkWall",
+                floor: "floor",
+                openings: [0, 3, 5],
+                glow: 0xff9f1a
             },
 
             {
-                name: "CENTRAL HIVE",
+                id: "central",
+                name: "Central Hive",
                 x: 0,
                 z: 0,
-                radius: 11,
-                active: true
+                radius: 12,
+                wall: "wall",
+                floor: "centralFloor",
+                openings: [0, 1, 2, 3, 4, 5],
+                glow: 0xffc02c
             },
 
             {
-                name: "WORKSHOP",
-                x: -18,
-                z: 13,
+                id: "workshop",
+                name: "Workshop",
+                x: -20,
+                z: 15,
                 radius: 9,
-                active: false
+                wall: "darkWall",
+                floor: "floor",
+                openings: [1, 3, 5],
+                glow: 0xffa51b
             },
 
             {
-                name: "WATER",
-                x: 18,
-                z: 13,
+                id: "water",
+                name: "Water",
+                x: 20,
+                z: 15,
                 radius: 9,
-                active: false
+                wall: "wall",
+                floor: "waterFloor",
+                openings: [0, 2, 4],
+                glow: 0xffc23a
             },
 
             {
-                name: "QUEEN CHAMBER",
+                id: "queen",
+                name: "Queen Chamber",
                 x: 0,
-                z: 27,
-                radius: 9,
-                active: false
+                z: 31,
+                radius: 10,
+                wall: "wall",
+                floor: "centralFloor",
+                openings: [1, 4],
+                glow: 0xffd34f
             }
         ];
-
 
         for (const data of roomData) {
+            const room = createRoom(
+                this.scene,
+                data,
+                this.materials
+            );
 
-            this.createRoom(data);
+            this.rooms.push(room);
         }
     }
 
+    createCorridors() {
+        const byId = id =>
+            this.rooms.find(room => room.id === id);
 
-    createRoom(data) {
+        const connections = [
 
-        const room =
-            new THREE.Group();
+            ["nursery", "garden"],
+            ["nursery", "storage"],
 
-        room.position.set(
-            data.x,
-            0,
-            data.z
-        );
+            ["garden", "central"],
+            ["storage", "central"],
 
+            ["garden", "workshop"],
+            ["storage", "water"],
 
-        // Main chamber floor
+            ["workshop", "water"],
 
-        const floor =
-            createHexRoom(
-                data.radius,
-                0.5,
-                data.active
-                    ? this.materials.roomInner
-                    : this.materials.room
-            );
+            ["workshop", "queen"],
+            ["water", "queen"],
 
-        floor.position.y = 0;
-
-        room.add(floor);
-
-
-        // Hex outline
-
-        const outline =
-            createHexOutline(
-                data.radius,
-                0.52,
-                data.active
-                    ? 0xffc247
-                    : 0x70400e
-            );
-
-        outline.position.y =
-            0.3;
-
-        room.add(outline);
-
-
-        // Active glow
-
-        if (data.active) {
-
-            const glow =
-                createHexGlow(
-                    data.radius * 0.88,
-                    0xffa51c
-                );
-
-            glow.position.y =
-                0.3;
-
-            glow.material.opacity =
-                0.15;
-
-            room.add(glow);
-
-            room.userData.glow =
-                glow;
-        }
-
-
-        // Room label
-
-        const label =
-            this.createRoomLabel(
-                data.name,
-                data.active
-            );
-
-        label.position.set(
-            0,
-            0.65,
-            0
-        );
-
-        room.add(label);
-
-
-        // Room metadata
-
-        room.userData.name =
-            data.name;
-
-        room.userData.active =
-            data.active;
-
-        room.userData.radius =
-            data.radius;
-
-        room.userData.x =
-            data.x;
-
-        room.userData.z =
-            data.z;
-
-
-        this.group.add(room);
-
-        this.rooms.push(room);
-    }
-
-
-    createRoomLabel(
-        text,
-        active
-    ) {
-
-        const canvas =
-            document.createElement(
-                "canvas"
-            );
-
-        canvas.width = 512;
-        canvas.height = 128;
-
-        const context =
-            canvas.getContext("2d");
-
-        context.clearRect(
-            0,
-            0,
-            canvas.width,
-            canvas.height
-        );
-
-        context.font =
-            "bold 32px Arial";
-
-        context.textAlign =
-            "center";
-
-        context.textBaseline =
-            "middle";
-
-        context.fillStyle =
-            active
-                ? "#ffd166"
-                : "#a66b25";
-
-        context.fillText(
-            text,
-            256,
-            64
-        );
-
-
-        const texture =
-            new THREE.CanvasTexture(
-                canvas
-            );
-
-        texture.colorSpace =
-            THREE.SRGBColorSpace;
-
-
-        const material =
-            new THREE.SpriteMaterial({
-                map: texture,
-                transparent: true,
-                depthWrite: false
-            });
-
-
-        const sprite =
-            new THREE.Sprite(
-                material
-            );
-
-        sprite.scale.set(
-            7,
-            1.75,
-            1
-        );
-
-        return sprite;
-    }
-
-
-    createHoneycombDecor() {
-
-        const positions = [
-
-            [-32, -27],
-            [32, -27],
-
-            [-34, 0],
-            [34, 0],
-
-            [-32, 27],
-            [32, 27],
-
-            [-45, -14],
-            [45, -14],
-
-            [-45, 14],
-            [45, 14]
+            ["central", "workshop"],
+            ["central", "water"]
         ];
 
+        for (const [aId, bId] of connections) {
+            const a = byId(aId);
+            const b = byId(bId);
 
-        for (const [x, z] of positions) {
-
-            const cell =
-                createHexGlow(
-                    4.2,
-                    0xff9e18
-                );
-
-            cell.position.set(
-                x,
-                0.1,
-                z
+            const corridor = createCorridor(
+                this.scene,
+                a,
+                b,
+                this.materials
             );
 
-            cell.material.opacity =
-                0.08;
-
-            this.group.add(cell);
+            this.corridors.push(corridor);
         }
     }
 
+    decorate() {
+        for (const room of this.rooms) {
+            decorateRoom(
+                room,
+                this.materials
+            );
+        }
+    }
 
     update(delta) {
-
-        this.time += delta;
-
+        /*
+         * Subtle breathing/pulsing of the Hive lights.
+         */
+        const time = performance.now() * 0.001;
 
         for (const room of this.rooms) {
+            const pulse =
+                0.14 +
+                Math.sin(time * 2 + room.x) * 0.025;
 
-            if (
-                room.userData.active &&
-                room.userData.glow
-            ) {
-
-                const pulse =
-                    0.12 +
-                    Math.sin(
-                        this.time * 2.5
-                    ) * 0.05;
-
-                room.userData.glow
-                    .material
-                    .opacity = pulse;
-            }
+            room.glow.material.opacity = pulse;
         }
     }
 
+    getRoomAt(x, z) {
+        let nearest = null;
+        let nearestDistance = Infinity;
+
+        for (const room of this.rooms) {
+            const distance = Math.hypot(
+                x - room.x,
+                z - room.z
+            );
+
+            if (
+                distance <
+                room.radius
+            ) {
+                if (distance < nearestDistance) {
+                    nearest = room;
+                    nearestDistance = distance;
+                }
+            }
+        }
+
+        return nearest;
+    }
 
     getActiveRooms() {
-
         return this.rooms.filter(
-            room =>
-                room.userData.active
+            room => room.active
         );
-    }
-
-
-    getRoomAt(
-        x,
-        z
-    ) {
-
-        let closest = null;
-        let closestDistance = Infinity;
-
-        for (const room of this.rooms) {
-
-            const dx =
-                x - room.userData.x;
-
-            const dz =
-                z - room.userData.z;
-
-            const distance =
-                Math.sqrt(
-                    dx * dx +
-                    dz * dz
-                );
-
-            if (
-                distance <
-                room.userData.radius &&
-                distance <
-                closestDistance
-            ) {
-
-                closest =
-                    room;
-
-                closestDistance =
-                    distance;
-            }
-        }
-
-        return closest;
     }
 }
