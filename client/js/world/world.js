@@ -200,105 +200,105 @@ export class World {
         this.scene.add(ring);
     }
 
-    createRooms() {
-        const roomData = [
+   createRooms() {
+    const roomData = [
+        {
+            id: "nursery",
+            name: "Nursery",
+            x: 0,
+            z: -28,
+            radius: 9,
+            wall: "wall",
+            floor: "floor",
+            openings: [1, 2],
+            glow: 0xffb82e
+        },
 
-            {
-                id: "nursery",
-                name: "Nursery",
-                x: 0,
-                z: -28,
-                radius: 9,
-                wall: "wall",
-                floor: "floor",
-                openings: [1, 2],
-                glow: 0xffb82e
-            },
+        {
+            id: "garden",
+            name: "Garden",
+            x: -19,
+            z: -14,
+            radius: 9,
+            wall: "wall",
+            floor: "gardenFloor",
+            openings: [0, 2, 4],
+            glow: 0xd4a932
+        },
 
-            {
-                id: "garden",
-                name: "Garden",
-                x: -19,
-                z: -14,
-                radius: 9,
-                wall: "wall",
-                floor: "gardenFloor",
-                openings: [0, 2, 4],
-                glow: 0xd4a932
-            },
+        {
+            id: "storage",
+            name: "Storage",
+            x: 19,
+            z: -14,
+            radius: 9,
+            wall: "darkWall",
+            floor: "floor",
+            openings: [0, 3, 5],
+            glow: 0xff9f1a
+        },
 
-            {
-                id: "storage",
-                name: "Storage",
-                x: 19,
-                z: -14,
-                radius: 9,
-                wall: "darkWall",
-                floor: "floor",
-                openings: [0, 3, 5],
-                glow: 0xff9f1a
-            },
+        {
+            id: "central",
+            name: "Central Hive",
+            x: 0,
+            z: 0,
+            radius: 12,
+            wall: "wall",
+            floor: "centralFloor",
+            openings: [0, 1, 2, 3, 4, 5],
+            glow: 0xffc02c
+        },
 
-            {
-                id: "central",
-                name: "Central Hive",
-                x: 0,
-                z: 0,
-                radius: 12,
-                wall: "wall",
-                floor: "centralFloor",
-                openings: [0, 1, 2, 3, 4, 5],
-                glow: 0xffc02c
-            },
+        {
+            id: "workshop",
+            name: "Workshop",
+            x: -20,
+            z: 15,
+            radius: 9,
+            wall: "darkWall",
+            floor: "floor",
+            openings: [1, 3, 5],
+            glow: 0xffa51b
+        },
 
-            {
-                id: "workshop",
-                name: "Workshop",
-                x: -20,
-                z: 15,
-                radius: 9,
-                wall: "darkWall",
-                floor: "floor",
-                openings: [1, 3, 5],
-                glow: 0xffa51b
-            },
+        {
+            id: "water",
+            name: "Water",
+            x: 20,
+            z: 15,
+            radius: 9,
+            wall: "wall",
+            floor: "waterFloor",
+            openings: [0, 2, 4],
+            glow: 0xffc23a
+        },
 
-            {
-                id: "water",
-                name: "Water",
-                x: 20,
-                z: 15,
-                radius: 9,
-                wall: "wall",
-                floor: "waterFloor",
-                openings: [0, 2, 4],
-                glow: 0xffc23a
-            },
-
-            {
-                id: "queen",
-                name: "Queen Chamber",
-                x: 0,
-                z: 31,
-                radius: 10,
-                wall: "wall",
-                floor: "centralFloor",
-                openings: [1, 4],
-                glow: 0xffd34f
-            }
-        ];
-
-        for (const data of roomData) {
-            const room = createRoom(
-                this.scene,
-                data,
-                this.materials
-            );
-
-            this.rooms.push(room);
+        {
+            id: "queen",
+            name: "Queen Chamber",
+            x: 0,
+            z: 31,
+            radius: 10,
+            wall: "wall",
+            floor: "centralFloor",
+            openings: [1, 4],
+            glow: 0xffd34f
         }
-    }
+    ];
 
+    for (const data of roomData) {
+        const room = createRoom(
+            this.scene,
+            data,
+            this.materials
+        );
+
+        this.collision.addRoom(room);
+        this.rooms.push(room);
+    }
+}
+    
     createCorridors() {
         const byId = id =>
             this.rooms.find(room => room.id === id);
