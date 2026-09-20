@@ -343,6 +343,7 @@ export class World {
             decorateRoom(
                 room,
                 this.materials
+                this.collision
             );
         }
     }
