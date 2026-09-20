@@ -1,216 +1,90 @@
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
+export class CharacterAnimation {
+    constructor(character) {
+        this.character = character;
 
-import { Character } from "./character.js";
-import { CharacterAnimation } from "./animation.js";
+        this.time = 0;
+        this.speed = 0;
 
-export class Player {
-    constructor(game, options = {}) {
-        this.game = game;
-
-        this.position = new THREE.Vector3(
-            0,
-            0,
-            7
-        );
-
-        this.velocity = new THREE.Vector3();
-
-        this.walkSpeed = 5.5;
-        this.sprintSpeed = 8.5;
-
-        this.rotationSpeed = 10;
-
-        this.keys = {
-            forward: false,
-            backward: false,
-            left: false,
-            right: false,
-            sprint: false
-        };
-
-        this.moving = false;
-
-        this.character =
-            new Character(options);
-
-        this.animation =
-            new CharacterAnimation(
-                this.character
-            );
-
-        this.object =
-            this.character.getObject();
-
-        this.object.position.copy(
-            this.position
-        );
-
-        this.game.scene.add(
-            this.object
-        );
-
-        this.setupInput();
+        this.walkCycle = 0;
     }
 
-    setupInput() {
-        window.addEventListener(
-            "keydown",
-            event => {
-                switch (event.code) {
-                    case "KeyW":
-                    case "ArrowUp":
-                        this.keys.forward = true;
-                        break;
+    update(delta, movementSpeed, moving) {
+        this.time += delta;
 
-                    case "KeyS":
-                    case "ArrowDown":
-                        this.keys.backward = true;
-                        break;
+        this.speed += (
+            movementSpeed - this.speed
+        ) * Math.min(delta * 10, 1);
 
-                    case "KeyA":
-                    case "ArrowLeft":
-                        this.keys.left = true;
-                        break;
+        if (moving) {
+            this.walkCycle +=
+                delta * (5 + this.speed * 1.5);
 
-                    case "KeyD":
-                    case "ArrowRight":
-                        this.keys.right = true;
-                        break;
-
-                    case "ShiftLeft":
-                    case "ShiftRight":
-                        this.keys.sprint = true;
-                        break;
-                }
-            }
-        );
-
-        window.addEventListener(
-            "keyup",
-            event => {
-                switch (event.code) {
-                    case "KeyW":
-                    case "ArrowUp":
-                        this.keys.forward = false;
-                        break;
-
-                    case "KeyS":
-                    case "ArrowDown":
-                        this.keys.backward = false;
-                        break;
-
-                    case "KeyA":
-                    case "ArrowLeft":
-                        this.keys.left = false;
-                        break;
-
-                    case "KeyD":
-                    case "ArrowRight":
-                        this.keys.right = false;
-                        break;
-
-                    case "ShiftLeft":
-                    case "ShiftRight":
-                        this.keys.sprint = false;
-                        break;
-                }
-            }
-        );
-    }
-
-    update(delta) {
-        const input = new THREE.Vector3();
-
-        if (this.keys.forward) {
-            input.z -= 1;
-        }
-
-        if (this.keys.backward) {
-            input.z += 1;
-        }
-
-        if (this.keys.left) {
-            input.x -= 1;
-        }
-
-        if (this.keys.right) {
-            input.x += 1;
-        }
-
-        this.moving =
-            input.lengthSq() > 0;
-
-        if (this.moving) {
-            input.normalize();
-        }
-
-        const speed =
-            this.keys.sprint
-                ? this.sprintSpeed
-                : this.walkSpeed;
-
-        const movement =
-            input.multiplyScalar(
-                speed * delta
-            );
-
-        /*
-         * World collision.
-         */
-        if (this.game.world?.collision) {
-            this.position =
-                this.game.world.collision
-                    .resolveMovement(
-                        this.position,
-                        movement
-                    );
+            this.walk();
         } else {
-            this.position.add(
-                movement
-            );
+            this.idle();
         }
-
-        /*
-         * Character rotation.
-         */
-        if (this.moving) {
-            const targetRotation =
-                Math.atan2(
-                    movement.x,
-                    movement.z
-                );
-
-            let difference =
-                targetRotation -
-                this.object.rotation.y;
-
-            difference =
-                Math.atan2(
-                    Math.sin(difference),
-                    Math.cos(difference)
-                );
-
-            this.object.rotation.y +=
-                difference *
-                Math.min(
-                    delta *
-                    this.rotationSpeed,
-                    1
-                );
-        }
-
-        this.object.position.copy(
-            this.position
-        );
-
-        this.animation.update(
-            delta,
-            speed,
-            this.moving
-        );
     }
 
-    getPosition() {
-        return this.position.clone();
+    walk() {
+        const c = this.character.parts;
+
+        const swing =
+            Math.sin(this.walkCycle) * 0.55;
+
+        const oppositeSwing =
+            Math.sin(this.walkCycle + Math.PI) * 0.55;
+
+        c.leftLeg.rotation.x = swing;
+        c.rightLeg.rotation.x = oppositeSwing;
+
+        c.leftArm.rotation.x =
+            oppositeSwing * 0.65;
+
+        c.rightArm.rotation.x =
+            swing * 0.65;
+
+        const bob =
+            Math.abs(
+                Math.sin(this.walkCycle)
+            ) * 0.045;
+
+        this.character.root.position.y =
+            bob;
+
+        c.head.rotation.z =
+            Math.sin(this.walkCycle * 0.5) * 0.025;
+    }
+
+    idle() {
+        const c = this.character.parts;
+
+        c.leftLeg.rotation.x *= 0.82;
+        c.rightLeg.rotation.x *= 0.82;
+
+        c.leftArm.rotation.x *= 0.82;
+        c.rightArm.rotation.x *= 0.82;
+
+        const breathing =
+            Math.sin(this.time * 2.2) * 0.018;
+
+        this.character.root.position.y =
+            breathing;
+
+        c.head.rotation.z =
+            Math.sin(this.time * 1.5) * 0.012;
+    }
+
+    sting() {
+        const c = this.character.parts;
+
+        c.rightArm.rotation.x = -1.2;
+        c.rightArm.rotation.z = -0.25;
+    }
+
+    resetAction() {
+        const c = this.character.parts;
+
+        c.rightArm.rotation.x = 0;
+        c.rightArm.rotation.z = 0;
     }
 }
