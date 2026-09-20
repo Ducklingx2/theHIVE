@@ -32,7 +32,7 @@ function box(
 
     collision.addBoxCollider(
         new THREE.Vector3(x, y, z),
-        new THREE.Vector3(width, depth, depth),
+        new THREE.Vector3(width, height, depth),
         {
             yMin: 0,
             yMax: height,
@@ -261,8 +261,8 @@ export function decorateRoom(
     materials,
     collision
 ) {
-    const group = new THREE.Group();
-
+    const group = room.object;
+    
     group.name = `${room.name}-Props`;
 
     switch (room.name) {
@@ -419,8 +419,6 @@ export function decorateRoom(
 
             break;
     }
-
-    room.group.add(group);
 
     return group;
 }
