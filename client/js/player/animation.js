@@ -1,46 +1,216 @@
-#include "server.h"
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 
-#include <cstdlib>
-#include <iostream>
-#include <string>
+import { Character } from "./character.js";
+import { CharacterAnimation } from "./animation.js";
 
-int main() {
+export class Player {
+    constructor(game, options = {}) {
+        this.game = game;
 
-    std::cout << "========================================\n";
-    std::cout << "          DPSH ExamHQ Backend\n";
-    std::cout << "========================================\n";
+        this.position = new THREE.Vector3(
+            0,
+            0,
+            7
+        );
 
-    const char* portEnvironment = std::getenv("PORT");
+        this.velocity = new THREE.Vector3();
 
-    int port = 8080;
+        this.walkSpeed = 5.5;
+        this.sprintSpeed = 8.5;
 
-    if (portEnvironment != nullptr) {
-        try {
-            port = std::stoi(portEnvironment);
+        this.rotationSpeed = 10;
+
+        this.keys = {
+            forward: false,
+            backward: false,
+            left: false,
+            right: false,
+            sprint: false
+        };
+
+        this.moving = false;
+
+        this.character =
+            new Character(options);
+
+        this.animation =
+            new CharacterAnimation(
+                this.character
+            );
+
+        this.object =
+            this.character.getObject();
+
+        this.object.position.copy(
+            this.position
+        );
+
+        this.game.scene.add(
+            this.object
+        );
+
+        this.setupInput();
+    }
+
+    setupInput() {
+        window.addEventListener(
+            "keydown",
+            event => {
+                switch (event.code) {
+                    case "KeyW":
+                    case "ArrowUp":
+                        this.keys.forward = true;
+                        break;
+
+                    case "KeyS":
+                    case "ArrowDown":
+                        this.keys.backward = true;
+                        break;
+
+                    case "KeyA":
+                    case "ArrowLeft":
+                        this.keys.left = true;
+                        break;
+
+                    case "KeyD":
+                    case "ArrowRight":
+                        this.keys.right = true;
+                        break;
+
+                    case "ShiftLeft":
+                    case "ShiftRight":
+                        this.keys.sprint = true;
+                        break;
+                }
+            }
+        );
+
+        window.addEventListener(
+            "keyup",
+            event => {
+                switch (event.code) {
+                    case "KeyW":
+                    case "ArrowUp":
+                        this.keys.forward = false;
+                        break;
+
+                    case "KeyS":
+                    case "ArrowDown":
+                        this.keys.backward = false;
+                        break;
+
+                    case "KeyA":
+                    case "ArrowLeft":
+                        this.keys.left = false;
+                        break;
+
+                    case "KeyD":
+                    case "ArrowRight":
+                        this.keys.right = false;
+                        break;
+
+                    case "ShiftLeft":
+                    case "ShiftRight":
+                        this.keys.sprint = false;
+                        break;
+                }
+            }
+        );
+    }
+
+    update(delta) {
+        const input = new THREE.Vector3();
+
+        if (this.keys.forward) {
+            input.z -= 1;
         }
-        catch (...) {
-            std::cerr << "Invalid PORT environment variable.\n";
-            std::cerr << "Falling back to port 8080.\n";
-            port = 8080;
+
+        if (this.keys.backward) {
+            input.z += 1;
         }
+
+        if (this.keys.left) {
+            input.x -= 1;
+        }
+
+        if (this.keys.right) {
+            input.x += 1;
+        }
+
+        this.moving =
+            input.lengthSq() > 0;
+
+        if (this.moving) {
+            input.normalize();
+        }
+
+        const speed =
+            this.keys.sprint
+                ? this.sprintSpeed
+                : this.walkSpeed;
+
+        const movement =
+            input.multiplyScalar(
+                speed * delta
+            );
+
+        /*
+         * World collision.
+         */
+        if (this.game.world?.collision) {
+            this.position =
+                this.game.world.collision
+                    .resolveMovement(
+                        this.position,
+                        movement
+                    );
+        } else {
+            this.position.add(
+                movement
+            );
+        }
+
+        /*
+         * Character rotation.
+         */
+        if (this.moving) {
+            const targetRotation =
+                Math.atan2(
+                    movement.x,
+                    movement.z
+                );
+
+            let difference =
+                targetRotation -
+                this.object.rotation.y;
+
+            difference =
+                Math.atan2(
+                    Math.sin(difference),
+                    Math.cos(difference)
+                );
+
+            this.object.rotation.y +=
+                difference *
+                Math.min(
+                    delta *
+                    this.rotationSpeed,
+                    1
+                );
+        }
+
+        this.object.position.copy(
+            this.position
+        );
+
+        this.animation.update(
+            delta,
+            speed,
+            this.moving
+        );
     }
 
-    std::cout << "Starting server on port " << port << "...\n";
-
-    try {
-
-        ExamHQServer server(port);
-
-        server.start();
-
+    getPosition() {
+        return this.position.clone();
     }
-    catch (const std::exception& error) {
-
-        std::cerr << "\nSERVER ERROR:\n";
-        std::cerr << error.what() << "\n";
-
-        return EXIT_FAILURE;
-    }
-
-    return EXIT_SUCCESS;
 }
