@@ -19,8 +19,8 @@ function box(
     mesh.position.copy(position);
     mesh.rotation.y = rotation;
 
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
 
     group.add(mesh);
 
@@ -46,8 +46,8 @@ function cylinder(
 
     mesh.position.copy(position);
 
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
 
     group.add(mesh);
 
