@@ -1,96 +1,87 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 
-import { World } from "./world.js";
-import { Player } from "./player.js";
-import { UI } from "./ui.js";
+import { World } from "./world/world.js";
+import { Player } from "./player/player.js";
 
 export class Game {
-
     constructor() {
+        this.container =
+            document.getElementById("game");
 
-        this.scene = null;
-        this.camera = null;
-        this.renderer = null;
-
-        this.world = null;
-        this.player = null;
-        this.ui = null;
+        if (!this.container) {
+            throw new Error(
+                'Missing #game element.'
+            );
+        }
 
         this.clock = new THREE.Clock();
 
-        this.running = false;
+        this.started = false;
 
         this.phase = "INTRUSION";
-
-        this.timeRemaining = 300;
+        this.phaseTime = 300;
 
         this.keys = {};
 
-        this.mouse = {
-            x: 0,
-            y: 0
-        };
-
-        this.init();
+        this.setupScene();
+        this.setupCamera();
+        this.setupRenderer();
+        this.setupWorld();
+        this.setupPlayer();
+        this.setupInput();
+        this.setupResize();
     }
 
-
-    init() {
-
-        // ---------------------------------------------------------
-        // SCENE
-        // ---------------------------------------------------------
-
+    setupScene() {
         this.scene = new THREE.Scene();
 
-        this.scene.background = new THREE.Color(0x090604);
+        this.scene.background =
+            new THREE.Color(0x080403);
 
-        this.scene.fog = new THREE.FogExp2(
-            0x090604,
-            0.018
-        );
+        this.scene.fog =
+            new THREE.FogExp2(
+                0x080403,
+                0.012
+            );
+    }
 
-
-        // ---------------------------------------------------------
-        // CAMERA
-        // ---------------------------------------------------------
-
-        this.camera = new THREE.PerspectiveCamera(
-            65,
-            window.innerWidth / window.innerHeight,
-            0.1,
-            500
-        );
+    setupCamera() {
+        this.camera =
+            new THREE.PerspectiveCamera(
+                65,
+                window.innerWidth /
+                    window.innerHeight,
+                0.1,
+                200
+            );
 
         this.camera.position.set(
             0,
-            22,
-            18
+            8,
+            14
         );
 
-        this.camera.lookAt(
-            0,
-            0,
-            0
+        this.cameraTarget =
+            new THREE.Vector3();
+    }
+
+    setupRenderer() {
+        this.renderer =
+            new THREE.WebGLRenderer({
+                antialias: true,
+                powerPreference: "high-performance"
+            });
+
+        this.renderer.setPixelRatio(
+            Math.min(
+                window.devicePixelRatio,
+                2
+            )
         );
-
-
-        // ---------------------------------------------------------
-        // RENDERER
-        // ---------------------------------------------------------
-
-        this.renderer = new THREE.WebGLRenderer({
-            antialias: true,
-            powerPreference: "high-performance"
-        });
 
         this.renderer.setSize(
             window.innerWidth,
             window.innerHeight
-        );
-
-        this.renderer.setPixelRatio(
-            Math.min(window.devicePixelRatio, 2)
         );
 
         this.renderer.shadowMap.enabled = true;
@@ -104,332 +95,317 @@ export class Game {
         this.renderer.toneMapping =
             THREE.ACESFilmicToneMapping;
 
-        this.renderer.toneMappingExposure = 1.2;
+        this.renderer.toneMappingExposure =
+            1.15;
 
-        document
-            .getElementById("game")
-            .appendChild(this.renderer.domElement);
-
-
-        // ---------------------------------------------------------
-        // LIGHTING
-        // ---------------------------------------------------------
-
-        this.createLighting();
-
-
-        // ---------------------------------------------------------
-        // WORLD
-        // ---------------------------------------------------------
-
-        this.world = new World(this);
-
-        this.scene.add(
-            this.world.group
-        );
-
-
-        // ---------------------------------------------------------
-        // PLAYER
-        // ---------------------------------------------------------
-
-        this.player = new Player(this);
-
-        this.scene.add(
-            this.player.group
-        );
-
-
-        // ---------------------------------------------------------
-        // UI
-        // ---------------------------------------------------------
-
-        this.ui = new UI(this);
-
-        this.ui.setPhase(
-            this.phase,
-            this.timeRemaining
-        );
-
-
-        // ---------------------------------------------------------
-        // INPUT
-        // ---------------------------------------------------------
-
-        this.setupInput();
-
-
-        // ---------------------------------------------------------
-        // RESIZE
-        // ---------------------------------------------------------
-
-        window.addEventListener(
-            "resize",
-            () => this.resize()
+        this.container.appendChild(
+            this.renderer.domElement
         );
     }
 
-
-    createLighting() {
-
-        // Soft global light
-
-        const ambient = new THREE.HemisphereLight(
-            0xffd27a,
-            0x100805,
-            1.8
-        );
-
-        this.scene.add(ambient);
-
-
-        // Main honey light
-
-        const mainLight = new THREE.DirectionalLight(
-            0xffc14a,
-            3.0
-        );
-
-        mainLight.position.set(
-            5,
-            25,
-            8
-        );
-
-        mainLight.castShadow = true;
-
-        mainLight.shadow.mapSize.width = 2048;
-        mainLight.shadow.mapSize.height = 2048;
-
-        mainLight.shadow.camera.left = -60;
-        mainLight.shadow.camera.right = 60;
-        mainLight.shadow.camera.top = 60;
-        mainLight.shadow.camera.bottom = -60;
-
-        this.scene.add(mainLight);
-
-
-        // Warm central Hive glow
-
-        const hiveLight = new THREE.PointLight(
-            0xff9f1c,
-            15,
-            35,
-            2
-        );
-
-        hiveLight.position.set(
-            0,
-            5,
-            0
-        );
-
-        this.scene.add(hiveLight);
-
-
-        // Smaller atmospheric lights
-
-        const lights = [
-            [-18, 3, -12],
-            [18, 3, -12],
-            [-18, 3, 12],
-            [18, 3, 12]
-        ];
-
-        for (const position of lights) {
-
-            const light = new THREE.PointLight(
-                0xffb52e,
-                5,
-                18,
-                2
-            );
-
-            light.position.set(
-                position[0],
-                position[1],
-                position[2]
-            );
-
-            this.scene.add(light);
-        }
+    setupWorld() {
+        this.world =
+            new World(this);
     }
 
+    setupPlayer() {
+        this.player =
+            new Player(this, {
+                suit: 0x292018,
+                suitSecondary: 0x4d3212,
+                visor: 0xffb82e,
+                visorGlow: 0xff8a00,
+                equipment: 0x15110d,
+                accent: 0xd99118
+            });
+    }
 
     setupInput() {
-
         window.addEventListener(
             "keydown",
             event => {
-
                 this.keys[event.code] = true;
 
+                /*
+                 * Prevent browser scrolling with
+                 * movement keys.
+                 */
                 if (
                     [
-                        "KeyW",
-                        "KeyA",
-                        "KeyS",
-                        "KeyD",
-                        "Space"
+                        "Space",
+                        "ArrowUp",
+                        "ArrowDown",
+                        "ArrowLeft",
+                        "ArrowRight"
                     ].includes(event.code)
                 ) {
                     event.preventDefault();
                 }
-
             }
         );
-
 
         window.addEventListener(
             "keyup",
             event => {
-
                 this.keys[event.code] = false;
             }
         );
 
-
+        /*
+         * Start game.
+         */
         const startButton =
-            document.getElementById("start-button");
+            document.getElementById(
+                "start-button"
+            );
 
         if (startButton) {
-
             startButton.addEventListener(
                 "click",
-                () => this.beginGame()
+                () => {
+                    this.beginGame();
+                }
             );
         }
 
-
+        /*
+         * Restart.
+         */
         const restartButton =
-            document.getElementById("restart-button");
+            document.getElementById(
+                "restart-button"
+            );
 
         if (restartButton) {
-
             restartButton.addEventListener(
                 "click",
-                () => window.location.reload()
+                () => {
+                    window.location.reload();
+                }
             );
         }
     }
 
+    setupResize() {
+        window.addEventListener(
+            "resize",
+            () => {
+                this.camera.aspect =
+                    window.innerWidth /
+                    window.innerHeight;
 
-    beginGame() {
+                this.camera.updateProjectionMatrix();
 
-        const startScreen =
-            document.getElementById("start-screen");
+                this.renderer.setSize(
+                    window.innerWidth,
+                    window.innerHeight
+                );
 
-        if (startScreen) {
-
-            startScreen.classList.add("hidden");
-        }
-
-        this.running = true;
-
-        this.clock.start();
+                this.renderer.setPixelRatio(
+                    Math.min(
+                        window.devicePixelRatio,
+                        2
+                    )
+                );
+            }
+        );
     }
 
-
-    update(delta) {
-
-        if (!this.running) {
+    beginGame() {
+        if (this.started) {
             return;
         }
 
+        this.started = true;
 
-        // ---------------------------------------------------------
-        // PLAYER
-        // ---------------------------------------------------------
+        this.clock.start();
 
-        this.player.update(
-            delta,
-            this.keys
-        );
+        const startScreen =
+            document.getElementById(
+                "start-screen"
+            );
 
-
-        // ---------------------------------------------------------
-        // CAMERA
-        // ---------------------------------------------------------
-
-        this.updateCamera();
-
-
-        // ---------------------------------------------------------
-        // WORLD
-        // ---------------------------------------------------------
-
-        this.world.update(
-            delta
-        );
-
-
-        // ---------------------------------------------------------
-        // TIMER
-        // ---------------------------------------------------------
-
-        this.timeRemaining -= delta;
-
-        if (this.timeRemaining < 0) {
-
-            this.timeRemaining = 0;
+        if (startScreen) {
+            startScreen.classList.add(
+                "hidden"
+            );
         }
 
-        this.ui.updateTimer(
-            this.timeRemaining
-        );
+        this.phase = "INTRUSION";
+        this.phaseTime = 300;
 
-
-        // ---------------------------------------------------------
-        // UI
-        // ---------------------------------------------------------
-
-        this.ui.update(
-            this.player
-        );
+        this.updateHUD();
     }
 
+    update(delta) {
+        if (!this.started) {
+            return;
+        }
 
-    updateCamera() {
+        /*
+         * Update player.
+         */
+        this.player.update(delta);
 
-        const target = this.player.group.position;
+        /*
+         * Update world.
+         */
+        this.world.update(delta);
 
+        /*
+         * Phase timer.
+         */
+        this.phaseTime -= delta;
+
+        if (this.phaseTime <= 0) {
+            this.phaseTime = 0;
+
+            this.handlePhaseTimeout();
+        }
+
+        /*
+         * Camera.
+         */
+        this.updateCamera(delta);
+
+        /*
+         * HUD.
+         */
+        this.updateHUD();
+    }
+
+    updateCamera(delta) {
+        const playerPosition =
+            this.player.getPosition();
+
+        /*
+         * Smooth third-person camera.
+         */
         const desiredPosition =
             new THREE.Vector3(
-                target.x,
-                target.y + 22,
-                target.z + 18
+                playerPosition.x,
+                playerPosition.y + 8.5,
+                playerPosition.z + 11
             );
 
         this.camera.position.lerp(
             desiredPosition,
-            0.08
+            Math.min(delta * 5, 1)
+        );
+
+        this.cameraTarget.lerp(
+            new THREE.Vector3(
+                playerPosition.x,
+                playerPosition.y + 1.7,
+                playerPosition.z
+            ),
+            Math.min(delta * 7, 1)
         );
 
         this.camera.lookAt(
-            target.x,
-            target.y,
-            target.z
+            this.cameraTarget
         );
     }
 
-
-    resize() {
-
-        this.camera.aspect =
-            window.innerWidth /
-            window.innerHeight;
-
-        this.camera.updateProjectionMatrix();
-
-        this.renderer.setSize(
-            window.innerWidth,
-            window.innerHeight
-        );
+    handlePhaseTimeout() {
+        /*
+         * Phase rules will be connected once
+         * multiplayer/combat exists.
+         *
+         * For now, prevent the timer from
+         * repeatedly firing.
+         */
+        if (this.phase === "INTRUSION") {
+            this.phaseTime = 0;
+        }
     }
 
+    updateHUD() {
+        const phaseName =
+            document.getElementById(
+                "phase-name"
+            );
+
+        const phaseDescription =
+            document.getElementById(
+                "phase-description"
+            );
+
+        const timer =
+            document.getElementById(
+                "timer"
+            );
+
+        const activeChamber =
+            document.getElementById(
+                "active-chamber"
+            );
+
+        if (phaseName) {
+            phaseName.textContent =
+                this.phase;
+        }
+
+        if (phaseDescription) {
+            if (
+                this.phase ===
+                "INTRUSION"
+            ) {
+                phaseDescription.textContent =
+                    "Find the Wasp.";
+            }
+
+            if (
+                this.phase ===
+                "ASSASSINATION"
+            ) {
+                phaseDescription.textContent =
+                    "The Queen must die.";
+            }
+
+            if (
+                this.phase ===
+                "TRUE COLOURS"
+            ) {
+                phaseDescription.textContent =
+                    "The Queen is running.";
+            }
+        }
+
+        if (timer) {
+            const minutes =
+                Math.floor(
+                    this.phaseTime / 60
+                );
+
+            const seconds =
+                Math.floor(
+                    this.phaseTime % 60
+                );
+
+            timer.textContent =
+                `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+        }
+
+        if (activeChamber) {
+            const rooms =
+                this.world.getActiveRooms();
+
+            if (rooms.length > 0) {
+                activeChamber.textContent =
+                    rooms[0].name;
+            } else {
+                activeChamber.textContent =
+                    "NONE";
+            }
+        }
+    }
+
+    start() {
+        this.animate();
+    }
 
     animate() {
-
         requestAnimationFrame(
             () => this.animate()
         );
@@ -446,11 +422,5 @@ export class Game {
             this.scene,
             this.camera
         );
-    }
-
-
-    start() {
-
-        this.animate();
     }
 }
