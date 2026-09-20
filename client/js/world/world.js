@@ -22,25 +22,23 @@ import {
 
 export class World {
     constructor(game) {
-        this.game = game;
-        this.scene = game.scene;
+    this.game = game;
+    this.scene = game.scene;
 
-        this.rooms = [];
-        this.corridors = [];
+    this.rooms = [];
+    this.corridors = [];
 
-        this.createMaterials();
-        this.createGround();
-        this.createRooms();
-        this.createCorridors();
+    this.createMaterials();
 
-        this.lighting =
-            createHiveLighting(this.scene);
+    this.collision = new CollisionSystem();
 
-        this.decorate();
+    this.createGround();
+    this.createRooms();
+    this.createCorridors();
+    this.decorate();
 
-        this.collision =
-            new CollisionSystem(this);
-    }
+    this.lighting = createHiveLighting(this.scene);
+}
 
     createMaterials() {
         this.materials = {
@@ -213,7 +211,6 @@ export class World {
             openings: [1, 2],
             glow: 0xffb82e
         },
-
         {
             id: "garden",
             name: "Garden",
@@ -225,7 +222,6 @@ export class World {
             openings: [0, 2, 4],
             glow: 0xd4a932
         },
-
         {
             id: "storage",
             name: "Storage",
@@ -237,7 +233,6 @@ export class World {
             openings: [0, 3, 5],
             glow: 0xff9f1a
         },
-
         {
             id: "central",
             name: "Central Hive",
@@ -249,7 +244,6 @@ export class World {
             openings: [0, 1, 2, 3, 4, 5],
             glow: 0xffc02c
         },
-
         {
             id: "workshop",
             name: "Workshop",
@@ -261,7 +255,6 @@ export class World {
             openings: [1, 3, 5],
             glow: 0xffa51b
         },
-
         {
             id: "water",
             name: "Water",
@@ -273,7 +266,6 @@ export class World {
             openings: [0, 2, 4],
             glow: 0xffc23a
         },
-
         {
             id: "queen",
             name: "Queen Chamber",
@@ -294,8 +286,8 @@ export class World {
             this.materials
         );
 
-        this.collision.addRoom(room);
         this.rooms.push(room);
+        this.collision.addRoom(room);
     }
 }
     
@@ -342,7 +334,7 @@ export class World {
         for (const room of this.rooms) {
             decorateRoom(
                 room,
-                this.materials
+                this.materials,
                 this.collision
             );
         }
