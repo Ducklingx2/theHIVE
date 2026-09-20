@@ -46,24 +46,20 @@ export class Game {
     }
 
     setupCamera() {
-        this.camera =
-            new THREE.PerspectiveCamera(
-                65,
-                window.innerWidth /
-                    window.innerHeight,
-                0.1,
-                200
-            );
+    this.camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth /
+            window.innerHeight,
+        0.05,
+        200
+    );
 
-        this.camera.position.set(
-            0,
-            8,
-            14
-        );
-
-        this.cameraTarget =
-            new THREE.Vector3();
-    }
+    this.camera.position.set(
+        0,
+        1.65,
+        7
+    );
+}
 
     setupRenderer() {
     this.renderer = new THREE.WebGLRenderer({
@@ -200,31 +196,31 @@ export class Game {
         );
     }
 
-    beginGame() {
-        if (this.started) {
-            return;
-        }
-
-        this.started = true;
-
-        this.clock.start();
-
-        const startScreen =
-            document.getElementById(
-                "start-screen"
-            );
-
-        if (startScreen) {
-            startScreen.classList.add(
-                "hidden"
-            );
-        }
-
-        this.phase = "INTRUSION";
-        this.phaseTime = 300;
-
-        this.updateHUD();
+   beginGame() {
+    if (this.started) {
+        return;
     }
+
+    this.started = true;
+
+    this.clock.start();
+
+    const startScreen =
+        document.getElementById(
+            "start-screen"
+        );
+
+    if (startScreen) {
+        startScreen.classList.add("hidden");
+    }
+
+    this.phase = "INTRUSION";
+    this.phaseTime = 300;
+
+    this.player.lockMouse();
+
+    this.updateHUD();
+}
 
     update(delta) {
         if (!this.started) {
@@ -264,38 +260,26 @@ export class Game {
     }
 
     updateCamera(delta) {
-        const playerPosition =
-            this.player.getPosition();
+    const cameraPosition =
+        this.player.getCameraPosition();
 
-        /*
-         * Smooth third-person camera.
-         */
-        const desiredPosition =
-            new THREE.Vector3(
-                playerPosition.x,
-                playerPosition.y + 8.5,
-                playerPosition.z + 11
+    this.camera.position.lerp(
+        cameraPosition,
+        Math.min(delta * 12, 1)
+    );
+
+    const lookDirection =
+        this.player.getLookDirection();
+
+    const target =
+        cameraPosition.clone()
+            .add(
+                lookDirection.multiplyScalar(10)
             );
 
-        this.camera.position.lerp(
-            desiredPosition,
-            Math.min(delta * 5, 1)
-        );
-
-        this.cameraTarget.lerp(
-            new THREE.Vector3(
-                playerPosition.x,
-                playerPosition.y + 1.7,
-                playerPosition.z
-            ),
-            Math.min(delta * 7, 1)
-        );
-
-        this.camera.lookAt(
-            this.cameraTarget
-        );
-    }
-
+    this.camera.lookAt(target);
+}
+    
     handlePhaseTimeout() {
         /*
          * Phase rules will be connected once
