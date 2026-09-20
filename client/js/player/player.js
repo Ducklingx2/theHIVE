@@ -13,204 +13,205 @@ export class Player {
             7
         );
 
-        this.velocity = new THREE.Vector3();
+        this.yaw = 0;
+        this.pitch = 0;
 
         this.walkSpeed = 5.5;
         this.sprintSpeed = 8.5;
 
-        this.rotationSpeed = 10;
+        this.eyeHeight = 1.65;
 
-        this.keys = {
-            forward: false,
-            backward: false,
-            left: false,
-            right: false,
-            sprint: false
-        };
+        this.mouseSensitivity = 0.0022;
 
-        this.moving = false;
+        this.character = new Character(options);
 
-        this.character =
-            new Character(options);
+        this.object = this.character.getObject();
 
-        this.animation =
-            new CharacterAnimation(
-                this.character
-            );
+        this.object.position.copy(this.position);
 
-        this.object =
-            this.character.getObject();
+        this.game.scene.add(this.object);
 
-        this.object.position.copy(
-            this.position
+        this.animation = new CharacterAnimation(
+            this.character
         );
 
-        this.game.scene.add(
-            this.object
-        );
+        this.pointerLocked = false;
 
-        this.setupInput();
+        this.setupMouse();
     }
 
-    setupInput() {
-        window.addEventListener(
-            "keydown",
-            event => {
-                switch (event.code) {
-                    case "KeyW":
-                    case "ArrowUp":
-                        this.keys.forward = true;
-                        break;
-
-                    case "KeyS":
-                    case "ArrowDown":
-                        this.keys.backward = true;
-                        break;
-
-                    case "KeyA":
-                    case "ArrowLeft":
-                        this.keys.left = true;
-                        break;
-
-                    case "KeyD":
-                    case "ArrowRight":
-                        this.keys.right = true;
-                        break;
-
-                    case "ShiftLeft":
-                    case "ShiftRight":
-                        this.keys.sprint = true;
-                        break;
-                }
+    setupMouse() {
+        document.addEventListener(
+            "pointerlockchange",
+            () => {
+                this.pointerLocked =
+                    document.pointerLockElement ===
+                    this.game.renderer.domElement;
             }
         );
 
-        window.addEventListener(
-            "keyup",
+        document.addEventListener(
+            "mousemove",
             event => {
-                switch (event.code) {
-                    case "KeyW":
-                    case "ArrowUp":
-                        this.keys.forward = false;
-                        break;
-
-                    case "KeyS":
-                    case "ArrowDown":
-                        this.keys.backward = false;
-                        break;
-
-                    case "KeyA":
-                    case "ArrowLeft":
-                        this.keys.left = false;
-                        break;
-
-                    case "KeyD":
-                    case "ArrowRight":
-                        this.keys.right = false;
-                        break;
-
-                    case "ShiftLeft":
-                    case "ShiftRight":
-                        this.keys.sprint = false;
-                        break;
+                if (!this.pointerLocked) {
+                    return;
                 }
+
+                this.yaw -=
+                    event.movementX *
+                    this.mouseSensitivity;
+
+                this.pitch -=
+                    event.movementY *
+                    this.mouseSensitivity;
+
+                const limit =
+                    Math.PI / 2 - 0.08;
+
+                this.pitch = THREE.MathUtils.clamp(
+                    this.pitch,
+                    -limit,
+                    limit
+                );
             }
         );
+    }
+
+    lockMouse() {
+        if (!this.game.renderer.domElement) {
+            return;
+        }
+
+        this.game.renderer.domElement.requestPointerLock();
     }
 
     update(delta) {
-        const input = new THREE.Vector3();
+        const keys = this.game.keys;
 
-        if (this.keys.forward) {
-            input.z -= 1;
+        let forward = 0;
+        let strafe = 0;
+
+        if (keys.KeyW || keys.ArrowUp) {
+            forward += 1;
         }
 
-        if (this.keys.backward) {
-            input.z += 1;
+        if (keys.KeyS || keys.ArrowDown) {
+            forward -= 1;
         }
 
-        if (this.keys.left) {
-            input.x -= 1;
+        if (keys.KeyD || keys.ArrowRight) {
+            strafe += 1;
         }
 
-        if (this.keys.right) {
-            input.x += 1;
+        if (keys.KeyA || keys.ArrowLeft) {
+            strafe -= 1;
         }
 
-        this.moving =
-            input.lengthSq() > 0;
+        const moving =
+            forward !== 0 ||
+            strafe !== 0;
 
-        if (this.moving) {
-            input.normalize();
-        }
+        if (moving) {
+            const direction =
+                new THREE.Vector3();
 
-        const speed =
-            this.keys.sprint
+            const forwardVector =
+                new THREE.Vector3(
+                    -Math.sin(this.yaw),
+                    0,
+                    -Math.cos(this.yaw)
+                );
+
+            const rightVector =
+                new THREE.Vector3(
+                    Math.cos(this.yaw),
+                    0,
+                    -Math.sin(this.yaw)
+                );
+
+            direction
+                .addScaledVector(
+                    forwardVector,
+                    forward
+                )
+                .addScaledVector(
+                    rightVector,
+                    strafe
+                )
+                .normalize();
+
+            const sprint =
+                keys.ShiftLeft ||
+                keys.ShiftRight;
+
+            const speed = sprint
                 ? this.sprintSpeed
                 : this.walkSpeed;
 
-        const movement =
-            input.multiplyScalar(
-                speed * delta
-            );
+            const movement =
+                direction.multiplyScalar(
+                    speed * delta
+                );
 
-        /*
-         * World collision.
-         */
-        if (this.game.world?.collision) {
-            this.position =
-                this.game.world.collision
-                    .resolveMovement(
+            const collision =
+                this.game.world.collision;
+
+            if (collision) {
+                this.position =
+                    collision.resolveMovement(
                         this.position,
                         movement
                     );
-        } else {
-            this.position.add(
-                movement
+            } else {
+                this.position.add(movement);
+            }
+
+            this.animation.update(
+                delta,
+                speed,
+                true
             );
-        }
-
-        /*
-         * Character rotation.
-         */
-        if (this.moving) {
-            const targetRotation =
-                Math.atan2(
-                    movement.x,
-                    movement.z
-                );
-
-            let difference =
-                targetRotation -
-                this.object.rotation.y;
-
-            difference =
-                Math.atan2(
-                    Math.sin(difference),
-                    Math.cos(difference)
-                );
-
-            this.object.rotation.y +=
-                difference *
-                Math.min(
-                    delta *
-                    this.rotationSpeed,
-                    1
-                );
+        } else {
+            this.animation.update(
+                delta,
+                0,
+                false
+            );
         }
 
         this.object.position.copy(
             this.position
         );
 
-        this.animation.update(
-            delta,
-            speed,
-            this.moving
+        // Hide the body in first-person.
+        this.object.visible = false;
+    }
+
+    getCameraPosition() {
+        return new THREE.Vector3(
+            this.position.x,
+            this.position.y +
+                this.eyeHeight,
+            this.position.z
         );
     }
 
+    getLookDirection() {
+        const direction =
+            new THREE.Vector3(
+                -Math.sin(this.yaw) *
+                    Math.cos(this.pitch),
+
+                Math.sin(this.pitch),
+
+                -Math.cos(this.yaw) *
+                    Math.cos(this.pitch)
+            );
+
+        return direction.normalize();
+    }
+
     getPosition() {
-        return this.position.clone();
+        return this.position;
     }
 }
