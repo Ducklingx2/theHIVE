@@ -51,8 +51,8 @@ function createWallSegment(length, height, thickness, material) {
     );
 
     const mesh = new THREE.Mesh(geometry, material);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
 
     return mesh;
 }
