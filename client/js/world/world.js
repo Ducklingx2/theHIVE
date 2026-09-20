@@ -1,337 +1,285 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 
+import { CollisionSystem } from "./collision.js";
+import { createHiveLighting } from "./lighting.js";
+import { decorateRoom } from "./props.js";
+
 import {
-    createRoom
-} from "./rooms.js";
+    MAP,
+    getRoom
+} from "./map.js";
+
+import {
+    createRoomArchitecture
+} from "./architecture.js";
 
 import {
     createCorridor
 } from "./corridors.js";
 
-import {
-    CollisionSystem
-} from "./collision.js";
-
-import {
-    createHiveLighting
-} from "./lighting.js";
-
-import {
-    decorateRoom
-} from "./props.js";
-
 export class World {
+
     constructor(game) {
-    this.game = game;
-    this.scene = game.scene;
 
-    this.rooms = [];
-    this.corridors = [];
+        this.game = game;
 
-    this.createMaterials();
+        this.scene = game.scene;
 
-    this.collision = new CollisionSystem();
+        this.rooms = [];
+        this.corridors = [];
 
-    this.createGround();
-    this.createRooms();
-    this.createCorridors();
-    this.decorate();
+        this.createMaterials();
 
-    this.lighting = createHiveLighting(this.scene);
-}
+        this.collision =
+            new CollisionSystem();
+
+        this.createGround();
+
+        this.createRooms();
+
+        this.createCorridors();
+
+        this.createLighting();
+
+        this.decorate();
+    }
 
     createMaterials() {
+
         this.materials = {
 
-            floor: new THREE.MeshStandardMaterial({
-                color: 0x24140a,
-                roughness: 0.82
-            }),
+            floor:
+                new THREE.MeshStandardMaterial({
+                    color: 0x3b2410,
+                    roughness: 0.82,
+                    metalness: 0.15
+                }),
 
-            centralFloor: new THREE.MeshStandardMaterial({
-                color: 0x38200d,
-                roughness: 0.72
-            }),
+            centralFloor:
+                new THREE.MeshStandardMaterial({
+                    color: 0x4b2d10,
+                    roughness: 0.72,
+                    metalness: 0.2
+                }),
 
-            gardenFloor: new THREE.MeshStandardMaterial({
-                color: 0x33230e,
-                roughness: 0.78
-            }),
+            ceiling:
+                new THREE.MeshStandardMaterial({
+                    color: 0x100b08,
+                    roughness: 0.95,
+                    metalness: 0.05
+                }),
 
-            waterFloor: new THREE.MeshStandardMaterial({
-                color: 0x182019,
-                roughness: 0.7
-            }),
+            wall:
+                new THREE.MeshStandardMaterial({
+                    color: 0x342116,
+                    roughness: 0.76,
+                    metalness: 0.12
+                }),
 
-            wall: new THREE.MeshStandardMaterial({
-                color: 0x5a3213,
-                roughness: 0.78
-            }),
+            darkWall:
+                new THREE.MeshStandardMaterial({
+                    color: 0x17110d,
+                    roughness: 0.82,
+                    metalness: 0.22
+                }),
 
-            darkWall: new THREE.MeshStandardMaterial({
-                color: 0x321a0a,
-                roughness: 0.9
-            }),
+            corridorFloor:
+                new THREE.MeshStandardMaterial({
+                    color: 0x2c1b0d,
+                    roughness: 0.75,
+                    metalness: 0.18
+                }),
 
-            ceiling: new THREE.MeshStandardMaterial({
-                color: 0x180b05,
-                roughness: 1
-            }),
+            corridorWall:
+                new THREE.MeshStandardMaterial({
+                    color: 0x21160f,
+                    roughness: 0.8,
+                    metalness: 0.2
+                }),
 
-            corridorFloor: new THREE.MeshStandardMaterial({
-                color: 0x2d1809,
-                roughness: 0.8
-            }),
+            accent:
+                new THREE.MeshStandardMaterial({
+                    color: 0xffa51f,
+                    emissive: 0xff7a00,
+                    emissiveIntensity: 1.4,
+                    roughness: 0.3,
+                    metalness: 0.35
+                }),
 
-            corridorWall: new THREE.MeshStandardMaterial({
-                color: 0x48270e,
-                roughness: 0.85
-            }),
+            light:
+                new THREE.MeshStandardMaterial({
+                    color: 0xffc04a,
+                    emissive: 0xff8a00,
+                    emissiveIntensity: 3,
+                    roughness: 0.2
+                }),
 
-            doorFrame: new THREE.MeshStandardMaterial({
-                color: 0xd28a17,
-                metalness: 0.25,
-                roughness: 0.5
-            }),
+            darkWood:
+                new THREE.MeshStandardMaterial({
+                    color: 0x24150b,
+                    roughness: 0.95
+                }),
 
-            wood: new THREE.MeshStandardMaterial({
-                color: 0x75451d,
-                roughness: 0.8
-            }),
+            wood:
+                new THREE.MeshStandardMaterial({
+                    color: 0x684019,
+                    roughness: 0.88
+                }),
 
-            darkWood: new THREE.MeshStandardMaterial({
-                color: 0x301607,
-                roughness: 0.9
-            }),
+            machine:
+                new THREE.MeshStandardMaterial({
+                    color: 0x302a23,
+                    roughness: 0.45,
+                    metalness: 0.65
+                }),
 
-            machine: new THREE.MeshStandardMaterial({
-                color: 0x35302a,
-                metalness: 0.65,
-                roughness: 0.4
-            }),
+            metal:
+                new THREE.MeshStandardMaterial({
+                    color: 0x5d554a,
+                    roughness: 0.38,
+                    metalness: 0.82
+                }),
 
-            metal: new THREE.MeshStandardMaterial({
-                color: 0x77716a,
-                metalness: 0.8,
-                roughness: 0.3
-            }),
+            plant:
+                new THREE.MeshStandardMaterial({
+                    color: 0x4f6b2c,
+                    roughness: 0.85
+                }),
 
-            pipe: new THREE.MeshStandardMaterial({
-                color: 0xc47b18,
-                metalness: 0.55,
-                roughness: 0.38
-            }),
+            plantStem:
+                new THREE.MeshStandardMaterial({
+                    color: 0x384a1c,
+                    roughness: 0.9
+                }),
 
-            plant: new THREE.MeshStandardMaterial({
-                color: 0x71832d,
-                roughness: 0.9
-            }),
+            waterTank:
+                new THREE.MeshStandardMaterial({
+                    color: 0x30434b,
+                    roughness: 0.32,
+                    metalness: 0.72
+                }),
 
-            plantStem: new THREE.MeshStandardMaterial({
-                color: 0x394719,
-                roughness: 0.9
-            }),
+            water:
+                new THREE.MeshStandardMaterial({
+                    color: 0x26758a,
+                    emissive: 0x0b3945,
+                    emissiveIntensity: 1,
+                    roughness: 0.2,
+                    metalness: 0.3
+                }),
 
-            waterTank: new THREE.MeshStandardMaterial({
-                color: 0x5b4a34,
-                metalness: 0.3,
-                roughness: 0.55
-            }),
-
-            water: new THREE.MeshStandardMaterial({
-                color: 0x7cc7c3,
-                emissive: 0x163d3b,
-                emissiveIntensity: 0.5,
-                roughness: 0.2
-            }),
-
-            queenPlatform: new THREE.MeshStandardMaterial({
-                color: 0xd89519,
-                metalness: 0.25,
-                roughness: 0.4
-            }),
-
-            light: new THREE.MeshStandardMaterial({
-                color: 0xffc34a,
-                emissive: 0xff9d00,
-                emissiveIntensity: 3
-            })
+            queenPlatform:
+                new THREE.MeshStandardMaterial({
+                    color: 0x5a2d0d,
+                    emissive: 0x3b1603,
+                    emissiveIntensity: 0.7,
+                    roughness: 0.5,
+                    metalness: 0.3
+                })
         };
     }
 
     createGround() {
-        const ground = new THREE.Mesh(
-            new THREE.CircleGeometry(65, 64),
+
+        const groundMaterial =
             new THREE.MeshStandardMaterial({
-                color: 0x080403,
+                color: 0x080604,
                 roughness: 1
-            })
-        );
+            });
 
-        ground.rotation.x = -Math.PI / 2;
-        ground.position.y = -0.08;
-
-        ground.receiveShadow = true;
-
-        this.scene.add(ground);
-
-        /*
-         * Outer Hive boundary.
-         */
-        const ring = new THREE.Mesh(
-            new THREE.RingGeometry(
-                62,
-                63,
-                6
-            ),
-            new THREE.MeshBasicMaterial({
-                color: 0xffa914,
-                transparent: true,
-                opacity: 0.25,
-                side: THREE.DoubleSide
-            })
-        );
-
-        ring.rotation.x = -Math.PI / 2;
-        ring.position.y = 0.01;
-
-        this.scene.add(ring);
-    }
-
-   createRooms() {
-    const roomData = [
-        {
-            id: "nursery",
-            name: "Nursery",
-            x: 0,
-            z: -28,
-            radius: 9,
-            wall: "wall",
-            floor: "floor",
-            openings: [1, 2],
-            glow: 0xffb82e
-        },
-        {
-            id: "garden",
-            name: "Garden",
-            x: -19,
-            z: -14,
-            radius: 9,
-            wall: "wall",
-            floor: "gardenFloor",
-            openings: [0, 2, 4],
-            glow: 0xd4a932
-        },
-        {
-            id: "storage",
-            name: "Storage",
-            x: 19,
-            z: -14,
-            radius: 9,
-            wall: "darkWall",
-            floor: "floor",
-            openings: [0, 3, 5],
-            glow: 0xff9f1a
-        },
-        {
-            id: "central",
-            name: "Central Hive",
-            x: 0,
-            z: 0,
-            radius: 12,
-            wall: "wall",
-            floor: "centralFloor",
-            openings: [0, 1, 2, 3, 4, 5],
-            glow: 0xffc02c
-        },
-        {
-            id: "workshop",
-            name: "Workshop",
-            x: -20,
-            z: 15,
-            radius: 9,
-            wall: "darkWall",
-            floor: "floor",
-            openings: [1, 3, 5],
-            glow: 0xffa51b
-        },
-        {
-            id: "water",
-            name: "Water",
-            x: 20,
-            z: 15,
-            radius: 9,
-            wall: "wall",
-            floor: "waterFloor",
-            openings: [0, 2, 4],
-            glow: 0xffc23a
-        },
-        {
-            id: "queen",
-            name: "Queen Chamber",
-            x: 0,
-            z: 31,
-            radius: 10,
-            wall: "wall",
-            floor: "centralFloor",
-            openings: [1, 4],
-            glow: 0xffd34f
-        }
-    ];
-
-    for (const data of roomData) {
-        const room = createRoom(
-            this.scene,
-            data,
-            this.materials
-        );
-
-        this.rooms.push(room);
-        this.collision.addRoom(room);
-    }
-}
-    
-    createCorridors() {
-        const byId = id =>
-            this.rooms.find(room => room.id === id);
-
-        const connections = [
-
-            ["nursery", "garden"],
-            ["nursery", "storage"],
-
-            ["garden", "central"],
-            ["storage", "central"],
-
-            ["garden", "workshop"],
-            ["storage", "water"],
-
-            ["workshop", "water"],
-
-            ["workshop", "queen"],
-            ["water", "queen"],
-
-            ["central", "workshop"],
-            ["central", "water"]
-        ];
-
-        for (const [aId, bId] of connections) {
-            const a = byId(aId);
-            const b = byId(bId);
-
-            const corridor = createCorridor(
-                this.scene,
-                a,
-                b,
-                this.materials
+        const ground =
+            new THREE.Mesh(
+                new THREE.CircleGeometry(
+                    65,
+                    64
+                ),
+                groundMaterial
             );
 
-            this.corridors.push(corridor);
+        ground.rotation.x =
+            -Math.PI / 2;
+
+        ground.position.y = -0.4;
+
+        ground.name = "HiveGround";
+
+        this.scene.add(ground);
+    }
+
+    createRooms() {
+
+        for (const roomData of MAP.rooms) {
+
+            const room =
+                createRoomArchitecture(
+                    this.scene,
+                    roomData,
+                    this.materials
+                );
+
+            room.userData.roomId =
+                roomData.id;
+
+            room.userData.roomName =
+                roomData.name;
+
+            this.rooms.push({
+                ...roomData,
+                object: room
+            });
+
+            this.collision.addRoom({
+                ...roomData,
+                object: room
+            });
+        }
+    }
+
+    createCorridors() {
+
+        for (const data of MAP.corridors) {
+
+            const from =
+                getRoom(data.from);
+
+            const to =
+                getRoom(data.to);
+
+            if (!from || !to) {
+                console.warn(
+                    "Invalid corridor:",
+                    data
+                );
+
+                continue;
+            }
+
+            const corridor =
+                createCorridor(
+                    this.scene,
+                    from,
+                    to,
+                    data.width,
+                    this.materials
+                );
+
+            corridor.from = data.from;
+            corridor.to = data.to;
+
+            this.corridors.push(
+                corridor
+            );
+
+            this.collision.addCorridor(
+                corridor
+            );
         }
     }
 
     decorate() {
+
         for (const room of this.rooms) {
+
             decorateRoom(
                 room,
                 this.materials,
@@ -340,48 +288,34 @@ export class World {
         }
     }
 
-    update(delta) {
-        /*
-         * Subtle breathing/pulsing of the Hive lights.
-         */
-        const time = performance.now() * 0.001;
+    createLighting() {
 
-        for (const room of this.rooms) {
-            const pulse =
-                0.14 +
-                Math.sin(time * 2 + room.x) * 0.025;
-
-            room.glow.material.opacity = pulse;
-        }
+        this.lighting =
+            createHiveLighting(
+                this.scene
+            );
     }
 
-    getRoomAt(x, z) {
-        let nearest = null;
-        let nearestDistance = Infinity;
+    getRoomAtPosition(x, z) {
 
         for (const room of this.rooms) {
-            const distance = Math.hypot(
-                x - room.x,
-                z - room.z
-            );
+
+            const halfWidth =
+                room.width / 2;
+
+            const halfDepth =
+                room.depth / 2;
 
             if (
-                distance <
-                room.radius
+                x >= room.x - halfWidth &&
+                x <= room.x + halfWidth &&
+                z >= room.z - halfDepth &&
+                z <= room.z + halfDepth
             ) {
-                if (distance < nearestDistance) {
-                    nearest = room;
-                    nearestDistance = distance;
-                }
+                return room;
             }
         }
 
-        return nearest;
-    }
-
-    getActiveRooms() {
-        return this.rooms.filter(
-            room => room.active
-        );
+        return null;
     }
 }
