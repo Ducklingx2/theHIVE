@@ -1,80 +1,72 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 
 export function createHiveLighting(scene) {
-    const ambient = new THREE.HemisphereLight(
-        0x5c3419,
-        0x090604,
-        1.5
+    // Soft overall illumination
+    const hemisphere = new THREE.HemisphereLight(
+        0xffd27a,
+        0x160b05,
+        2.2
     );
 
-    scene.add(ambient);
+    scene.add(hemisphere);
 
-    const main = new THREE.DirectionalLight(
+    // ONE shadow-casting light.
+    // Keeping shadows limited to a single light avoids excessive
+    // shadow-map texture samplers on lower-end GPUs.
+    const mainLight = new THREE.DirectionalLight(
         0xffc15a,
-        2.0
+        3.2
     );
 
-    main.position.set(
-        0,
+    mainLight.position.set(20, 35, 15);
+    mainLight.castShadow = true;
+
+    mainLight.shadow.mapSize.width = 1024;
+    mainLight.shadow.mapSize.height = 1024;
+
+    mainLight.shadow.camera.near = 1;
+    mainLight.shadow.camera.far = 100;
+
+    mainLight.shadow.camera.left = -55;
+    mainLight.shadow.camera.right = 55;
+    mainLight.shadow.camera.top = 55;
+    mainLight.shadow.camera.bottom = -55;
+
+    mainLight.shadow.bias = -0.0005;
+
+    scene.add(mainLight);
+
+    // Ambient Hive glow
+    const hiveGlow = new THREE.PointLight(
+        0xff9f24,
         35,
-        5
+        55,
+        2
     );
 
-    main.castShadow = true;
+    hiveGlow.position.set(0, 7, 0);
+    hiveGlow.castShadow = false;
 
-    main.shadow.mapSize.width = 2048;
-    main.shadow.mapSize.height = 2048;
+    scene.add(hiveGlow);
 
-    main.shadow.camera.near = 1;
-    main.shadow.camera.far = 100;
-
-    main.shadow.camera.left = -45;
-    main.shadow.camera.right = 45;
-    main.shadow.camera.top = 45;
-    main.shadow.camera.bottom = -45;
-
-    scene.add(main);
-
-    /*
-     * Warm central hive light.
-     */
-    const central = new THREE.PointLight(
-        0xff9d18,
-        5,
-        30
+    // Secondary warm light.
+    // No shadows here.
+    const secondaryGlow = new THREE.PointLight(
+        0xffc45c,
+        18,
+        40,
+        2
     );
 
-    central.position.set(
-        0,
-        5,
-        0
-    );
+    secondaryGlow.position.set(0, 4, 25);
+    secondaryGlow.castShadow = false;
 
-    central.castShadow = true;
-
-    scene.add(central);
-
-    /*
-     * Cool secondary light.
-     */
-    const secondary = new THREE.PointLight(
-        0xffd37a,
-        2,
-        45
-    );
-
-    secondary.position.set(
-        0,
-        10,
-        20
-    );
-
-    scene.add(secondary);
+    scene.add(secondaryGlow);
 
     return {
-        ambient,
-        main,
-        central,
-        secondary
+        hemisphere,
+        mainLight,
+        hiveGlow,
+        secondaryGlow
     };
 }
