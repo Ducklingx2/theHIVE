@@ -1,11 +1,33 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 
-const WALL = 0.6;
+import { MAP, getRoom } from "./map.js";
 
-function addMesh(group, geometry, material, position, name) {
-    const mesh = new THREE.Mesh(geometry, material);
+const DOOR_WIDTH = 6;
+const WALL_THICKNESS = 0.8;
+
+function addBox(
+    group,
+    size,
+    position,
+    material,
+    name
+) {
+
+    const geometry =
+        new THREE.BoxGeometry(
+            size.x,
+            size.y,
+            size.z
+        );
+
+    const mesh =
+        new THREE.Mesh(
+            geometry,
+            material
+        );
 
     mesh.position.copy(position);
+
     mesh.name = name;
 
     mesh.castShadow = false;
@@ -16,294 +38,715 @@ function addMesh(group, geometry, material, position, name) {
     return mesh;
 }
 
-function createFloor(group, room, material) {
-    const floor = addMesh(
-        group,
-        new THREE.BoxGeometry(
-            room.width,
-            0.35,
-            room.depth
-        ),
-        material,
-        new THREE.Vector3(
-            room.x,
-            -0.18,
-            room.z
-        ),
-        `${room.id}-floor`
-    );
-
-    return floor;
-}
-
-function createCeiling(group, room, material) {
-    const ceiling = addMesh(
-        group,
-        new THREE.BoxGeometry(
-            room.width,
-            0.35,
-            room.depth
-        ),
-        material,
-        new THREE.Vector3(
-            room.x,
-            room.height,
-            room.z
-        ),
-        `${room.id}-ceiling`
-    );
-
-    return ceiling;
-}
-
-function createWall(
+function addFloorPattern(
     group,
     room,
-    x,
-    z,
-    width,
-    depth,
-    material,
-    name
+    materials
 ) {
-    return addMesh(
-        group,
-        new THREE.BoxGeometry(
-            width,
-            room.height,
-            depth
-        ),
-        material,
-        new THREE.Vector3(
-            x,
-            room.height / 2,
-            z
-        ),
-        name
-    );
+
+    const floorMaterial =
+        room.type === "central"
+            ? materials.centralFloor
+            : materials.floor;
+
+    const floor =
+        addBox(
+            group,
+            new THREE.Vector3(
+                room.width,
+                0.35,
+                room.depth
+            ),
+            new THREE.Vector3(
+                room.x,
+                -0.175,
+                room.z
+            ),
+            floorMaterial,
+            `${room.id}-Floor`
+        );
+
+    floor.userData.isFloor = true;
+
+    // Honeycomb floor strips.
+    const stripeMaterial =
+        materials.darkHoney;
+
+    const spacing = 3;
+
+    for (
+        let x = room.x - room.width / 2 + spacing;
+        x < room.x + room.width / 2;
+        x += spacing
+    ) {
+
+        const strip =
+            addBox(
+                group,
+                new THREE.Vector3(
+                    0.08,
+                    0.025,
+                    room.depth - 1
+                ),
+                new THREE.Vector3(
+                    x,
+                    0.015,
+                    room.z
+                ),
+                stripeMaterial,
+                `${room.id}-FloorStripe`
+            );
+
+        strip.userData.decorative = true;
+    }
+}
+
+function getConnectionDirection(
+    room,
+    other
+) {
+
+    const dx =
+        other.x - room.x;
+
+    const dz =
+        other.z - room.z;
+
+    if (Math.abs(dx) > Math.abs(dz)) {
+
+        return dx > 0
+            ? "east"
+            : "west";
+    }
+
+    return dz > 0
+        ? "south"
+        : "north";
+}
+
+function hasDoor(room, direction) {
+
+    for (const connectionId of room.connections) {
+
+        const other =
+            getRoom(connectionId);
+
+        if (!other) {
+            continue;
+        }
+
+        if (
+            getConnectionDirection(
+                room,
+                other
+            ) === direction
+        ) {
+
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function createWallWithDoor(
+    group,
+    room,
+    direction,
+    materials
+) {
+
+    const width = room.width;
+    const depth = room.depth;
+    const height = room.height;
+
+    const hasOpening =
+        hasDoor(
+            room,
+            direction
+        );
+
+    const wallMaterial =
+        direction === "north" ||
+        direction === "south"
+            ? materials.wall
+            : materials.darkWall;
+
+    const y =
+        height / 2;
+
+    if (!hasOpening) {
+
+        if (
+            direction === "north" ||
+            direction === "south"
+        ) {
+
+            addBox(
+                group,
+                new THREE.Vector3(
+                    width,
+                    height,
+                    WALL_THICKNESS
+                ),
+                new THREE.Vector3(
+                    room.x,
+                    y,
+                    room.z +
+                        (
+                            direction === "north"
+                                ? -depth / 2
+                                : depth / 2
+                        )
+                ),
+                wallMaterial,
+                `${room.id}-${direction}-Wall`
+            );
+
+        } else {
+
+            addBox(
+                group,
+                new THREE.Vector3(
+                    WALL_THICKNESS,
+                    height,
+                    depth
+                ),
+                new THREE.Vector3(
+                    room.x +
+                        (
+                            direction === "west"
+                                ? -width / 2
+                                : width / 2
+                        ),
+                    y,
+                    room.z
+                ),
+                wallMaterial,
+                `${room.id}-${direction}-Wall`
+            );
+        }
+
+        return;
+    }
+
+    /*
+    -------------------------------------------------------
+    DOORWAY
+
+    Instead of one solid wall:
+
+    ███████      ███████
+                 DOOR
+    ███████      ███████
+
+    -------------------------------------------------------
+    */
+
+    const doorWidth =
+        Math.min(
+            DOOR_WIDTH,
+            width - 2
+        );
+
+    if (
+        direction === "north" ||
+        direction === "south"
+    ) {
+
+        const sideWidth =
+            (width - doorWidth) / 2;
+
+        const wallZ =
+            room.z +
+            (
+                direction === "north"
+                    ? -depth / 2
+                    : depth / 2
+            );
+
+        // Left section.
+        addBox(
+            group,
+            new THREE.Vector3(
+                sideWidth,
+                height,
+                WALL_THICKNESS
+            ),
+            new THREE.Vector3(
+                room.x -
+                    (doorWidth / 2 +
+                    sideWidth / 2),
+                y,
+                wallZ
+            ),
+            wallMaterial,
+            `${room.id}-${direction}-WallLeft`
+        );
+
+        // Right section.
+        addBox(
+            group,
+            new THREE.Vector3(
+                sideWidth,
+                height,
+                WALL_THICKNESS
+            ),
+            new THREE.Vector3(
+                room.x +
+                    (doorWidth / 2 +
+                    sideWidth / 2),
+                y,
+                wallZ
+            ),
+            wallMaterial,
+            `${room.id}-${direction}-WallRight`
+        );
+
+        // Door frame.
+        createDoorFrame(
+            group,
+            room.x - doorWidth / 2,
+            y,
+            wallZ,
+            doorWidth,
+            height,
+            direction,
+            materials
+        );
+
+        createDoorFrame(
+            group,
+            room.x + doorWidth / 2,
+            y,
+            wallZ,
+            doorWidth,
+            height,
+            direction,
+            materials,
+            true
+        );
+
+    } else {
+
+        const sideDepth =
+            (depth - doorWidth) / 2;
+
+        const wallX =
+            room.x +
+            (
+                direction === "west"
+                    ? -width / 2
+                    : width / 2
+            );
+
+        // Back section.
+        addBox(
+            group,
+            new THREE.Vector3(
+                WALL_THICKNESS,
+                height,
+                sideDepth
+            ),
+            new THREE.Vector3(
+                wallX,
+                y,
+                room.z -
+                    (
+                        doorWidth / 2 +
+                        sideDepth / 2
+                    )
+            ),
+            wallMaterial,
+            `${room.id}-${direction}-WallBack`
+        );
+
+        // Front section.
+        addBox(
+            group,
+            new THREE.Vector3(
+                WALL_THICKNESS,
+                height,
+                sideDepth
+            ),
+            new THREE.Vector3(
+                wallX,
+                y,
+                room.z +
+                    (
+                        doorWidth / 2 +
+                        sideDepth / 2
+                    )
+            ),
+            wallMaterial,
+            `${room.id}-${direction}-WallFront`
+        );
+
+        createDoorFrame(
+            group,
+            wallX,
+            y,
+            room.z - doorWidth / 2,
+            doorWidth,
+            height,
+            direction,
+            materials
+        );
+
+        createDoorFrame(
+            group,
+            wallX,
+            y,
+            room.z + doorWidth / 2,
+            doorWidth,
+            height,
+            direction,
+            materials,
+            true
+        );
+    }
 }
 
 function createDoorFrame(
     group,
     x,
+    y,
     z,
-    rotation,
-    material
+    doorWidth,
+    height,
+    direction,
+    materials,
+    second = false
 ) {
-    const frame = new THREE.Group();
 
-    frame.position.set(x, 0, z);
-    frame.rotation.y = rotation;
+    const verticalWidth = 0.35;
 
-    const left = addMesh(
-        frame,
-        new THREE.BoxGeometry(
-            0.35,
-            4.8,
-            0.35
-        ),
-        material,
-        new THREE.Vector3(-2.35, 2.4, 0),
-        "door-frame-left"
-    );
+    let position;
 
-    const right = addMesh(
-        frame,
-        new THREE.BoxGeometry(
-            0.35,
-            4.8,
-            0.35
-        ),
-        material,
-        new THREE.Vector3(2.35, 2.4, 0),
-        "door-frame-right"
-    );
+    if (
+        direction === "north" ||
+        direction === "south"
+    ) {
 
-    const top = addMesh(
-        frame,
-        new THREE.BoxGeometry(
-            5.05,
-            0.35,
-            0.35
-        ),
-        material,
-        new THREE.Vector3(0, 4.8, 0),
-        "door-frame-top"
-    );
-
-    group.add(frame);
-
-    return frame;
-}
-
-function createWallPanels(
-    group,
-    room,
-    material,
-    accentMaterial
-) {
-    const panelHeight = 3.2;
-
-    const positions = [
-        [
-            room.x - room.width / 2 + 0.35,
-            panelHeight / 2,
-            room.z
-        ],
-        [
-            room.x + room.width / 2 - 0.35,
-            panelHeight / 2,
-            room.z
-        ]
-    ];
-
-    for (const position of positions) {
-        const panel = addMesh(
-            group,
-            new THREE.BoxGeometry(
-                0.12,
-                panelHeight,
-                room.depth - 1
-            ),
-            material,
+        position =
             new THREE.Vector3(
-                position[0],
-                position[1],
-                position[2]
+                x,
+                y,
+                z
+            );
+
+        addBox(
+            group,
+            new THREE.Vector3(
+                verticalWidth,
+                height,
+                0.9
             ),
-            `${room.id}-wall-panel`
+            position,
+            materials.black,
+            "DoorFrame"
         );
 
-        panel.userData.decorative = true;
+    } else {
+
+        position =
+            new THREE.Vector3(
+                x,
+                y,
+                z
+            );
+
+        addBox(
+            group,
+            new THREE.Vector3(
+                0.9,
+                height,
+                verticalWidth
+            ),
+            position,
+            materials.black,
+            "DoorFrame"
+        );
+    }
+}
+
+function createDoorTop(
+    group,
+    room,
+    direction,
+    materials
+) {
+
+    const height =
+        room.height;
+
+    const doorWidth =
+        Math.min(
+            DOOR_WIDTH,
+            room.width - 2
+        );
+
+    let position;
+    let size;
+
+    if (
+        direction === "north" ||
+        direction === "south"
+    ) {
+
+        position =
+            new THREE.Vector3(
+                room.x,
+                height - 0.4,
+                room.z +
+                    (
+                        direction === "north"
+                            ? -room.depth / 2
+                            : room.depth / 2
+                    )
+            );
+
+        size =
+            new THREE.Vector3(
+                doorWidth,
+                0.8,
+                0.9
+            );
+
+    } else {
+
+        position =
+            new THREE.Vector3(
+                room.x +
+                    (
+                        direction === "west"
+                            ? -room.width / 2
+                            : room.width / 2
+                    ),
+                height - 0.4,
+                room.z
+            );
+
+        size =
+            new THREE.Vector3(
+                0.9,
+                0.8,
+                doorWidth
+            );
     }
 
-    const horizontal = addMesh(
+    addBox(
         group,
-        new THREE.BoxGeometry(
-            room.width - 1,
-            0.18,
-            0.18
-        ),
-        accentMaterial,
-        new THREE.Vector3(
-            room.x,
-            3.1,
-            room.z - room.depth / 2 + 0.35
-        ),
-        `${room.id}-accent-strip`
+        size,
+        position,
+        materials.black,
+        `${room.id}-${direction}-DoorHeader`
     );
 
-    horizontal.userData.decorative = true;
+    // Glowing doorway strip.
+    const glow =
+        addBox(
+            group,
+            size.clone().multiplyScalar(0.72),
+            position.clone().add(
+                new THREE.Vector3(
+                    0,
+                    -0.05,
+                    0
+                )
+            ),
+            materials.glow,
+            `${room.id}-${direction}-DoorGlow`
+        );
+
+    glow.material.emissiveIntensity = 3;
 }
 
 function createPillars(
     group,
     room,
-    material,
-    accentMaterial
+    materials
 ) {
-    const corners = [
-        [-room.width / 2 + 0.8, -room.depth / 2 + 0.8],
-        [room.width / 2 - 0.8, -room.depth / 2 + 0.8],
-        [-room.width / 2 + 0.8, room.depth / 2 - 0.8],
-        [room.width / 2 - 0.8, room.depth / 2 - 0.8]
+
+    const pillarMaterial =
+        materials.black;
+
+    const inset = 1.2;
+
+    const positions = [
+
+        [
+            room.x - room.width / 2 + inset,
+            room.z - room.depth / 2 + inset
+        ],
+
+        [
+            room.x + room.width / 2 - inset,
+            room.z - room.depth / 2 + inset
+        ],
+
+        [
+            room.x - room.width / 2 + inset,
+            room.z + room.depth / 2 - inset
+        ],
+
+        [
+            room.x + room.width / 2 - inset,
+            room.z + room.depth / 2 - inset
+        ]
     ];
 
-    for (const [x, z] of corners) {
-        const pillar = addMesh(
+    for (const [x, z] of positions) {
+
+        addBox(
             group,
-            new THREE.BoxGeometry(
-                0.7,
+            new THREE.Vector3(
+                0.65,
                 room.height,
-                0.7
+                0.65
             ),
-            material,
             new THREE.Vector3(
-                room.x + x,
+                x,
                 room.height / 2,
-                room.z + z
+                z
             ),
-            `${room.id}-pillar`
+            pillarMaterial,
+            `${room.id}-Pillar`
         );
-
-        const cap = addMesh(
-            group,
-            new THREE.BoxGeometry(
-                0.95,
-                0.25,
-                0.95
-            ),
-            accentMaterial,
-            new THREE.Vector3(
-                room.x + x,
-                room.height - 0.15,
-                room.z + z
-            ),
-            `${room.id}-pillar-cap`
-        );
-
-        pillar.userData.decorative = true;
-        cap.userData.decorative = true;
     }
 }
 
-function createCeilingStructure(
+function createCeiling(
     group,
     room,
-    material,
-    accentMaterial
+    materials
 ) {
-    const beam1 = addMesh(
+
+    addBox(
         group,
-        new THREE.BoxGeometry(
-            room.width - 1,
-            0.3,
-            0.35
+        new THREE.Vector3(
+            room.width,
+            0.5,
+            room.depth
         ),
-        material,
         new THREE.Vector3(
             room.x,
-            room.height - 0.35,
+            room.height,
             room.z
         ),
-        `${room.id}-ceiling-beam`
+        materials.ceiling,
+        `${room.id}-Ceiling`
     );
 
-    const beam2 = addMesh(
+    // Bright central ceiling panel.
+    addBox(
         group,
-        new THREE.BoxGeometry(
-            0.35,
-            0.3,
-            room.depth - 1
+        new THREE.Vector3(
+            Math.min(room.width - 3, 10),
+            0.08,
+            0.45
         ),
-        material,
         new THREE.Vector3(
             room.x,
-            room.height - 0.35,
+            room.height - 0.18,
             room.z
         ),
-        `${room.id}-ceiling-beam-cross`
+        materials.light,
+        `${room.id}-CeilingLight`
+    );
+}
+
+function createRoomSign(
+    group,
+    room,
+    materials
+) {
+
+    const canvas =
+        document.createElement("canvas");
+
+    canvas.width = 1024;
+    canvas.height = 256;
+
+    const ctx =
+        canvas.getContext("2d");
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
     );
 
-    const light = addMesh(
-        group,
-        new THREE.BoxGeometry(
-            2.2,
-            0.12,
-            0.5
-        ),
-        accentMaterial,
-        new THREE.Vector3(
-            room.x,
-            room.height - 0.58,
-            room.z
-        ),
-        `${room.id}-ceiling-light`
+    ctx.fillStyle = "#17110b";
+
+    ctx.fillRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
     );
 
-    beam1.userData.decorative = true;
-    beam2.userData.decorative = true;
-    light.userData.decorative = true;
+    ctx.strokeStyle = "#ffbd32";
+    ctx.lineWidth = 10;
+
+    ctx.strokeRect(
+        8,
+        8,
+        canvas.width - 16,
+        canvas.height - 16
+    );
+
+    ctx.fillStyle = "#ffd35c";
+
+    ctx.font =
+        "bold 76px Arial";
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    ctx.fillText(
+        room.name.toUpperCase(),
+        canvas.width / 2,
+        canvas.height / 2
+    );
+
+    const texture =
+        new THREE.CanvasTexture(canvas);
+
+    texture.colorSpace =
+        THREE.SRGBColorSpace;
+
+    const material =
+        new THREE.MeshBasicMaterial({
+            map: texture,
+            transparent: false
+        });
+
+    const geometry =
+        new THREE.PlaneGeometry(
+            Math.min(room.width - 3, 12),
+            3
+        );
+
+    const sign =
+        new THREE.Mesh(
+            geometry,
+            material
+        );
+
+    sign.position.set(
+        room.x,
+        Math.min(room.height - 1, 6),
+        room.z - room.depth / 2 + 0.55
+    );
+
+    sign.rotation.y = Math.PI;
+
+    sign.name =
+        `${room.id}-RoomSign`;
+
+    group.add(sign);
 }
 
 export function createRoomArchitecture(
@@ -311,111 +754,231 @@ export function createRoomArchitecture(
     room,
     materials
 ) {
-    const group = new THREE.Group();
 
-    group.name = `ROOM_${room.id.toUpperCase()}`;
+    const group =
+        new THREE.Group();
 
-    scene.add(group);
+    group.name =
+        `${room.name}-Architecture`;
 
-    createFloor(
+    // -----------------------------------------------
+    // FLOOR
+    // -----------------------------------------------
+
+    createFloorPattern(
         group,
         room,
-        materials.floor
+        materials
     );
 
-    createCeiling(
+    // -----------------------------------------------
+    // WALLS WITH REAL DOORWAYS
+    // -----------------------------------------------
+
+    createWallWithDoor(
         group,
         room,
-        materials.ceiling
+        "north",
+        materials
     );
 
-    /*
-        Each room is a REAL enclosed rectangular room.
-
-        Doors are created separately.
-        For now we leave a doorway in the
-        center of each connected wall.
-    */
-
-    createWall(
+    createWallWithDoor(
         group,
         room,
-        room.x,
-        room.z - room.depth / 2,
-        room.width,
-        WALL,
-        materials.wall,
-        `${room.id}-north-wall`
+        "south",
+        materials
     );
 
-    createWall(
+    createWallWithDoor(
         group,
         room,
-        room.x,
-        room.z + room.depth / 2,
-        room.width,
-        WALL,
-        materials.wall,
-        `${room.id}-south-wall`
+        "east",
+        materials
     );
 
-    createWall(
+    createWallWithDoor(
         group,
         room,
-        room.x - room.width / 2,
-        room.z,
-        WALL,
-        room.depth,
-        materials.wall,
-        `${room.id}-west-wall`
+        "west",
+        materials
     );
 
-    createWall(
-        group,
-        room,
-        room.x + room.width / 2,
-        room.z,
-        WALL,
-        room.depth,
-        materials.wall,
-        `${room.id}-east-wall`
-    );
+    // -----------------------------------------------
+    // DOOR HEADERS
+    // -----------------------------------------------
 
-    createWallPanels(
-        group,
-        room,
-        materials.darkWall,
-        materials.accent
-    );
+    for (const direction of [
+        "north",
+        "south",
+        "east",
+        "west"
+    ]) {
+
+        if (
+            hasDoor(
+                room,
+                direction
+            )
+        ) {
+
+            createDoorTop(
+                group,
+                room,
+                direction,
+                materials
+            );
+        }
+    }
+
+    // -----------------------------------------------
+    // PILLARS
+    // -----------------------------------------------
 
     createPillars(
         group,
         room,
-        materials.darkWall,
-        materials.accent
+        materials
     );
 
-    createCeilingStructure(
+    // -----------------------------------------------
+    // CEILING
+    // -----------------------------------------------
+
+    createCeiling(
         group,
         room,
-        materials.darkWall,
-        materials.light
+        materials
     );
+
+    // -----------------------------------------------
+    // ROOM SIGN
+    // -----------------------------------------------
+
+    createRoomSign(
+        group,
+        room,
+        materials
+    );
+
+    // -----------------------------------------------
+    // ROOM ACCENT
+    // -----------------------------------------------
+
+    const accent =
+        addBox(
+            group,
+            new THREE.Vector3(
+                room.width - 2,
+                0.18,
+                0.35
+            ),
+            new THREE.Vector3(
+                room.x,
+                0.14,
+                room.z
+            ),
+            materials.accent,
+            `${room.id}-CenterAccent`
+        );
+
+    accent.userData.decorative = true;
+
+    scene.add(group);
 
     return group;
 }
 
+/*
+Small compatibility helper used by older code.
+*/
 export function createDoor(
     scene,
     position,
     rotation,
     materials
 ) {
-    return createDoorFrame(
-        scene,
-        position.x,
-        position.z,
-        rotation,
-        materials.accent
+
+    const group =
+        new THREE.Group();
+
+    group.position.copy(position);
+
+    group.rotation.y =
+        rotation || 0;
+
+    const frameMaterial =
+        materials.black;
+
+    const glowMaterial =
+        materials.glow;
+
+    const left =
+        addBox(
+            group,
+            new THREE.Vector3(
+                0.35,
+                5.5,
+                0.7
+            ),
+            new THREE.Vector3(
+                -3,
+                2.75,
+                0
+            ),
+            frameMaterial,
+            "DoorLeft"
+        );
+
+    const right =
+        addBox(
+            group,
+            new THREE.Vector3(
+                0.35,
+                5.5,
+                0.7
+            ),
+            new THREE.Vector3(
+                3,
+                2.75,
+                0
+            ),
+            frameMaterial,
+            "DoorRight"
+        );
+
+    addBox(
+        group,
+        new THREE.Vector3(
+            6.35,
+            0.35,
+            0.7
+        ),
+        new THREE.Vector3(
+            0,
+            5.25,
+            0
+        ),
+        frameMaterial,
+        "DoorTop"
     );
+
+    addBox(
+        group,
+        new THREE.Vector3(
+            5.2,
+            0.08,
+            0.15
+        ),
+        new THREE.Vector3(
+            0,
+            4.95,
+            0
+        ),
+        glowMaterial,
+        "DoorGlow"
+    );
+
+    scene.add(group);
+
+    return group;
 }
