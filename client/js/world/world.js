@@ -23,7 +23,8 @@ export class World {
 
         this.game = game;
 
-        this.scene = game.scene;
+        this.scene =
+            game.scene;
 
         this.rooms = [];
         this.corridors = [];
@@ -44,276 +45,296 @@ export class World {
         this.decorate();
     }
 
-createMaterials() {
+    // =====================================================
+    // MATERIALS
+    // =====================================================
 
-    this.materials = {
+    createMaterials() {
 
-        // =====================================================
-        // HIVE CORE
-        // =====================================================
+        this.materials = {
 
-        honey: new THREE.MeshStandardMaterial({
-            color: 0xffc12b,
-            roughness: 0.48,
-            metalness: 0.05
-        }),
+            honey:
+                new THREE.MeshStandardMaterial({
+                    color: 0xffc12b,
+                    roughness: 0.45,
+                    metalness: 0.08
+                }),
 
-        darkHoney: new THREE.MeshStandardMaterial({
-            color: 0xb87912,
-            roughness: 0.55,
-            metalness: 0.08
-        }),
+            darkHoney:
+                new THREE.MeshStandardMaterial({
+                    color: 0xb8750e,
+                    roughness: 0.55
+                }),
 
-        black: new THREE.MeshStandardMaterial({
-            color: 0x17130b,
-            roughness: 0.32,
-            metalness: 0.65
-        }),
+            black:
+                new THREE.MeshStandardMaterial({
+                    color: 0x17130b,
+                    roughness: 0.32,
+                    metalness: 0.65
+                }),
 
-        blackSoft: new THREE.MeshStandardMaterial({
-            color: 0x29241b,
-            roughness: 0.42,
-            metalness: 0.5
-        }),
+            metal:
+                new THREE.MeshStandardMaterial({
+                    color: 0x5d554a,
+                    roughness: 0.35,
+                    metalness: 0.85
+                }),
 
-        // =====================================================
-        // ARCHITECTURE
-        // =====================================================
+            glow:
+                new THREE.MeshStandardMaterial({
+                    color: 0xffd45a,
+                    emissive: 0xffa800,
+                    emissiveIntensity: 2.5,
+                    roughness: 0.25,
+                    metalness: 0.1
+                }),
 
-        floor: new THREE.MeshStandardMaterial({
-            color: 0xe2a91f,
-            roughness: 0.58,
-            metalness: 0.12
-        }),
+            floor:
+                new THREE.MeshStandardMaterial({
+                    color: 0x3c2410,
+                    roughness: 0.82,
+                    metalness: 0.12
+                }),
 
-        centralFloor: new THREE.MeshStandardMaterial({
-            color: 0xf2bd2d,
-            roughness: 0.48,
-            metalness: 0.16
-        }),
+            centralFloor:
+                new THREE.MeshStandardMaterial({
+                    color: 0x50300f,
+                    roughness: 0.7,
+                    metalness: 0.2
+                }),
 
-        ceiling: new THREE.MeshStandardMaterial({
-            color: 0x18140e,
-            roughness: 0.7,
-            metalness: 0.25
-        }),
+            ceiling:
+                new THREE.MeshStandardMaterial({
+                    color: 0x100b08,
+                    roughness: 0.92,
+                    metalness: 0.08
+                }),
 
-        wall: new THREE.MeshStandardMaterial({
-            color: 0xf0b928,
-            roughness: 0.5,
-            metalness: 0.12
-        }),
+            wall:
+                new THREE.MeshStandardMaterial({
+                    color: 0x5a3615,
+                    roughness: 0.68,
+                    metalness: 0.15
+                }),
 
-        darkWall: new THREE.MeshStandardMaterial({
-            color: 0x17130b,
-            roughness: 0.45,
-            metalness: 0.55
-        }),
+            darkWall:
+                new THREE.MeshStandardMaterial({
+                    color: 0x20150d,
+                    roughness: 0.78,
+                    metalness: 0.22
+                }),
 
-        corridorFloor: new THREE.MeshStandardMaterial({
-            color: 0xc88d16,
-            roughness: 0.58,
-            metalness: 0.18
-        }),
+            corridorFloor:
+                new THREE.MeshStandardMaterial({
+                    color: 0x30200f,
+                    roughness: 0.76,
+                    metalness: 0.18
+                }),
 
-        corridorWall: new THREE.MeshStandardMaterial({
-            color: 0xe2a91f,
-            roughness: 0.5,
-            metalness: 0.12
-        }),
+            corridorWall:
+                new THREE.MeshStandardMaterial({
+                    color: 0x21160f,
+                    roughness: 0.78,
+                    metalness: 0.2
+                }),
 
-        // =====================================================
-        // ACCENTS / LIGHTS
-        // =====================================================
+            accent:
+                new THREE.MeshStandardMaterial({
+                    color: 0xffa51f,
+                    emissive: 0xff7900,
+                    emissiveIntensity: 1.5,
+                    roughness: 0.28,
+                    metalness: 0.35
+                }),
 
-        accent: new THREE.MeshStandardMaterial({
-            color: 0xffb51b,
-            emissive: 0xff7a00,
-            emissiveIntensity: 1.5,
-            roughness: 0.3,
-            metalness: 0.25
-        }),
+            light:
+                new THREE.MeshStandardMaterial({
+                    color: 0xffc04a,
+                    emissive: 0xff8a00,
+                    emissiveIntensity: 3.5,
+                    roughness: 0.18
+                }),
 
-        light: new THREE.MeshStandardMaterial({
-            color: 0xffe18a,
-            emissive: 0xffb21c,
-            emissiveIntensity: 3.5,
-            roughness: 0.18,
-            metalness: 0.1
-        }),
+            darkWood:
+                new THREE.MeshStandardMaterial({
+                    color: 0x24150b,
+                    roughness: 0.94
+                }),
 
-        glow: new THREE.MeshStandardMaterial({
-            color: 0xffd45a,
-            emissive: 0xffa800,
-            emissiveIntensity: 2.2,
-            roughness: 0.3,
-            metalness: 0.05
-        }),
+            wood:
+                new THREE.MeshStandardMaterial({
+                    color: 0x684019,
+                    roughness: 0.86
+                }),
 
-        // =====================================================
-        // MATERIALS / PROPS
-        // =====================================================
+            machine:
+                new THREE.MeshStandardMaterial({
+                    color: 0x302a23,
+                    roughness: 0.42,
+                    metalness: 0.7
+                }),
 
-        darkWood: new THREE.MeshStandardMaterial({
-            color: 0x24180b,
-            roughness: 0.85
-        }),
+            plant:
+                new THREE.MeshStandardMaterial({
+                    color: 0x557c2f,
+                    roughness: 0.82
+                }),
 
-        wood: new THREE.MeshStandardMaterial({
-            color: 0x8a591c,
-            roughness: 0.72
-        }),
+            plantStem:
+                new THREE.MeshStandardMaterial({
+                    color: 0x35491d,
+                    roughness: 0.88
+                }),
 
-        machine: new THREE.MeshStandardMaterial({
-            color: 0x24221d,
-            roughness: 0.38,
-            metalness: 0.78
-        }),
+            waterTank:
+                new THREE.MeshStandardMaterial({
+                    color: 0x30434b,
+                    roughness: 0.3,
+                    metalness: 0.75
+                }),
 
-        metal: new THREE.MeshStandardMaterial({
-            color: 0x68635a,
-            roughness: 0.28,
-            metalness: 0.9
-        }),
+            water:
+                new THREE.MeshStandardMaterial({
+                    color: 0x26758a,
+                    emissive: 0x0b3945,
+                    emissiveIntensity: 1.1,
+                    roughness: 0.18,
+                    metalness: 0.3
+                }),
 
-        metalDark: new THREE.MeshStandardMaterial({
-            color: 0x302e29,
-            roughness: 0.3,
-            metalness: 0.85
-        }),
+            queenPlatform:
+                new THREE.MeshStandardMaterial({
+                    color: 0x5a2d0d,
+                    emissive: 0x3b1603,
+                    emissiveIntensity: 0.7,
+                    roughness: 0.45,
+                    metalness: 0.35
+                })
+        };
+    }
 
-        // =====================================================
-        // NATURE
-        // =====================================================
+    // =====================================================
+    // GROUND
+    // =====================================================
 
-        plant: new THREE.MeshStandardMaterial({
-            color: 0x628d36,
-            roughness: 0.72
-        }),
-
-        plantStem: new THREE.MeshStandardMaterial({
-            color: 0x3b5420,
-            roughness: 0.8
-        }),
-
-        // =====================================================
-        // WATER
-        // =====================================================
-
-        waterTank: new THREE.MeshStandardMaterial({
-            color: 0x3f4946,
-            roughness: 0.28,
-            metalness: 0.82
-        }),
-
-        water: new THREE.MeshStandardMaterial({
-            color: 0x54a8ad,
-            emissive: 0x164c4f,
-            emissiveIntensity: 1.1,
-            roughness: 0.15,
-            metalness: 0.35
-        }),
-
-        // =====================================================
-        // QUEEN
-        // =====================================================
-
-        queenPlatform: new THREE.MeshStandardMaterial({
-            color: 0xffc52f,
-            emissive: 0x7d4100,
-            emissiveIntensity: 0.65,
-            roughness: 0.38,
-            metalness: 0.25
-        })
-    };
-}
-    
     createGround() {
 
-        const groundMaterial =
+        const geometry =
+            new THREE.CircleGeometry(
+                75,
+                64
+            );
+
+        const material =
             new THREE.MeshStandardMaterial({
-                color: 0x080604,
-                roughness: 1
+                color: 0x100b08,
+                roughness: 0.95
             });
 
         const ground =
             new THREE.Mesh(
-                new THREE.CircleGeometry(
-                    65,
-                    64
-                ),
-                groundMaterial
+                geometry,
+                material
             );
 
         ground.rotation.x =
             -Math.PI / 2;
 
-        ground.position.y = -0.4;
+        ground.position.y =
+            -0.35;
 
-        ground.name = "HiveGround";
+        ground.receiveShadow = false;
+
+        ground.name =
+            "HiveGround";
 
         this.scene.add(ground);
+
+        // Large outer honey ring.
+        const ring =
+            new THREE.Mesh(
+                new THREE.RingGeometry(
+                    48,
+                    48.8,
+                    64
+                ),
+                this.materials.accent
+            );
+
+        ring.rotation.x =
+            -Math.PI / 2;
+
+        ring.position.y =
+            -0.32;
+
+        this.scene.add(ring);
     }
+
+    // =====================================================
+    // ROOMS
+    // =====================================================
 
     createRooms() {
 
         for (const roomData of MAP.rooms) {
 
-            const room =
+            const object =
                 createRoomArchitecture(
                     this.scene,
                     roomData,
                     this.materials
                 );
 
-            room.userData.roomId =
-                roomData.id;
+            const room = {
 
-            room.userData.roomName =
-                roomData.name;
-
-            this.rooms.push({
                 ...roomData,
-                object: room
-            });
 
-            this.collision.addRoom({
-                ...roomData,
-                object: room
-            });
+                object,
+
+                active: true
+            };
+
+            object.userData.roomId =
+                room.id;
+
+            object.userData.roomType =
+                room.type;
+
+            object.userData.roomName =
+                room.name;
+
+            this.rooms.push(room);
+
+            this.collision.addRoom(
+                room
+            );
         }
     }
 
+    // =====================================================
+    // CORRIDORS
+    // =====================================================
+
     createCorridors() {
 
-        for (const data of MAP.corridors) {
-
-            const from =
-                getRoom(data.from);
-
-            const to =
-                getRoom(data.to);
-
-            if (!from || !to) {
-                console.warn(
-                    "Invalid corridor:",
-                    data
-                );
-
-                continue;
-            }
+        for (
+            const corridorData
+            of MAP.corridors
+        ) {
 
             const corridor =
                 createCorridor(
                     this.scene,
-                    from,
-                    to,
-                    data.width,
+                    corridorData,
                     this.materials
                 );
 
-            corridor.from = data.from;
-            corridor.to = data.to;
+            if (!corridor) {
+                continue;
+            }
+
+            corridor.id =
+                corridorData.id;
 
             this.corridors.push(
                 corridor
@@ -324,6 +345,22 @@ createMaterials() {
             );
         }
     }
+
+    // =====================================================
+    // LIGHTING
+    // =====================================================
+
+    createLighting() {
+
+        this.lighting =
+            createHiveLighting(
+                this.scene
+            );
+    }
+
+    // =====================================================
+    // PROPS
+    // =====================================================
 
     decorate() {
 
@@ -337,15 +374,14 @@ createMaterials() {
         }
     }
 
-    createLighting() {
+    // =====================================================
+    // ROOM DETECTION
+    // =====================================================
 
-        this.lighting =
-            createHiveLighting(
-                this.scene
-            );
-    }
-
-    getRoomAtPosition(x, z) {
+    getRoomAtPosition(
+        x,
+        z
+    ) {
 
         for (const room of this.rooms) {
 
@@ -356,26 +392,157 @@ createMaterials() {
                 room.depth / 2;
 
             if (
-                x >= room.x - halfWidth &&
-                x <= room.x + halfWidth &&
-                z >= room.z - halfDepth &&
-                z <= room.z + halfDepth
+                x >=
+                    room.x - halfWidth &&
+
+                x <=
+                    room.x + halfWidth &&
+
+                z >=
+                    room.z - halfDepth &&
+
+                z <=
+                    room.z + halfDepth
             ) {
+
                 return room;
+            }
+        }
+
+        // Check corridors.
+        for (
+            const corridor
+            of this.corridors
+        ) {
+
+            if (
+                this.pointInsideCorridor(
+                    x,
+                    z,
+                    corridor
+                )
+            ) {
+
+                return {
+                    id:
+                        `corridor-${corridor.id}`,
+
+                    name:
+                        `${getRoom(corridor.from)?.name ?? ""} Corridor`,
+
+                    type:
+                        "corridor",
+
+                    corridor: true
+                };
             }
         }
 
         return null;
     }
 
-    getActiveRooms() {
-    // For now, every constructed room is considered active.
-    // The phase/sabotage system can later change this dynamically.
-    return this.rooms;
+    pointInsideCorridor(
+        x,
+        z,
+        corridor
+    ) {
+
+        const start =
+            corridor.start;
+
+        const end =
+            corridor.end;
+
+        const dx =
+            end.x - start.x;
+
+        const dz =
+            end.z - start.z;
+
+        const lengthSquared =
+            dx * dx +
+            dz * dz;
+
+        if (lengthSquared === 0) {
+            return false;
+        }
+
+        let t =
+            (
+                (x - start.x) * dx +
+                (z - start.z) * dz
+            ) /
+            lengthSquared;
+
+        t =
+            THREE.MathUtils.clamp(
+                t,
+                0,
+                1
+            );
+
+        const closestX =
+            start.x + dx * t;
+
+        const closestZ =
+            start.z + dz * t;
+
+        const distance =
+            Math.hypot(
+                x - closestX,
+                z - closestZ
+            );
+
+        return (
+            distance <=
+            corridor.width / 2
+        );
     }
 
+    // =====================================================
+    // ACTIVE ROOMS
+    // =====================================================
+
+    getActiveRooms() {
+
+        return this.rooms.filter(
+            room =>
+                room.active !== false
+        );
+    }
+
+    // =====================================================
+    // UPDATE
+    // =====================================================
+
     update(delta) {
-    // World-level animation/update hook.
-    // Props and environmental animations can be added here later.
+
+        // Future room animations can live here.
+        // Keeping this method means Game.update()
+        // always has a valid world update.
+
+        for (const room of this.rooms) {
+
+            const animations =
+                room.object.userData.animations;
+
+            if (!animations) {
+                continue;
+            }
+
+            for (
+                const animation
+                of animations
+            ) {
+
+                if (
+                    typeof animation ===
+                    "function"
+                ) {
+
+                    animation(delta);
+                }
+            }
+        }
     }
 }
