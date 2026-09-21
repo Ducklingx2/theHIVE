@@ -1,7 +1,9 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
 
 export class CollisionSystem {
+
     constructor() {
+
         this.playerRadius = 0.42;
 
         this.roomRegions = [];
@@ -9,160 +11,360 @@ export class CollisionSystem {
         this.colliders = [];
     }
 
+    // =====================================================
+    // WORLD REGIONS
+    // =====================================================
+
     addRoom(room) {
+
         this.roomRegions.push(room);
     }
 
     addCorridor(corridor) {
+
         this.corridors.push(corridor);
     }
 
-    addBoxCollider(position, size, options = {}) {
-        const collider = {
+    // =====================================================
+    // PROP COLLIDERS
+    // =====================================================
+
+    addBoxCollider(
+        position,
+        size,
+        options = {}
+    ) {
+
+        this.colliders.push({
+
             type: "box",
-            minX: position.x - size.x / 2,
-            maxX: position.x + size.x / 2,
-            minZ: position.z - size.z / 2,
-            maxZ: position.z + size.z / 2,
-            yMin: options.yMin ?? 0,
-            yMax: options.yMax ?? 6,
-            name: options.name || "prop"
-        };
 
-        this.colliders.push(collider);
+            position:
+                position.clone(),
 
-        return collider;
+            size:
+                size.clone(),
+
+            name:
+                options.name ?? "BoxCollider",
+
+            enabled:
+                options.enabled !== false
+        });
     }
 
-    addCylinderCollider(position, radius, options = {}) {
-        const collider = {
+    addCylinderCollider(
+        position,
+        radius,
+        options = {}
+    ) {
+
+        this.colliders.push({
+
             type: "circle",
-            x: position.x,
-            z: position.z,
+
+            position:
+                position.clone(),
+
             radius,
-            yMin: options.yMin ?? 0,
-            yMax: options.yMax ?? 6,
-            name: options.name || "prop"
-        };
 
-        this.colliders.push(collider);
+            name:
+                options.name ?? "CylinderCollider",
 
-        return collider;
+            enabled:
+                options.enabled !== false
+        });
     }
 
-    isInsideRoom(x, z, room) {
-        const dx = x - room.x;
-        const dz = z - room.z;
+    // =====================================================
+    // ROOM TEST
+    // =====================================================
 
-        const radius = room.radius - this.playerRadius;
+    isInsideRoom(
+        x,
+        z,
+        room
+    ) {
 
-        const qx = Math.abs(dx);
-        const qz = Math.abs(dz);
+        const halfWidth =
+            room.width / 2;
 
-        // Point-in-regular-hexagon approximation.
-        const hexHeight = radius * Math.sqrt(3);
-
-        if (qz > hexHeight / 2) {
-            return false;
-        }
-
-        if (qx > radius) {
-            return false;
-        }
+        const halfDepth =
+            room.depth / 2;
 
         return (
-            qz <=
-            Math.sqrt(3) * Math.min(
-                radius - qx,
-                radius / 2
-            )
+
+            x >=
+                room.x -
+                halfWidth +
+
+                this.playerRadius &&
+
+            x <=
+                room.x +
+                halfWidth -
+
+                this.playerRadius &&
+
+            z >=
+                room.z -
+                halfDepth +
+
+                this.playerRadius &&
+
+            z <=
+                room.z +
+                halfDepth -
+
+                this.playerRadius
         );
     }
 
-    isInsideCorridor(x, z, corridor) {
-        const dx = corridor.end.x - corridor.start.x;
-        const dz = corridor.end.z - corridor.start.z;
+    // =====================================================
+    // CORRIDOR TEST
+    // =====================================================
 
-        const lengthSquared = dx * dx + dz * dz;
+    isInsideCorridor(
+        x,
+        z,
+        corridor
+    ) {
 
-        if (lengthSquared === 0) {
+        const start =
+            corridor.start;
+
+        const end =
+            corridor.end;
+
+        const dx =
+            end.x - start.x;
+
+        const dz =
+            end.z - start.z;
+
+        const lengthSquared =
+            dx * dx +
+            dz * dz;
+
+        if (lengthSquared <= 0.0001) {
             return false;
         }
 
         let t =
-            ((x - corridor.start.x) * dx +
-                (z - corridor.start.z) * dz) /
+            (
+                (x - start.x) * dx +
+                (z - start.z) * dz
+            ) /
             lengthSquared;
 
-        t = Math.max(0, Math.min(1, t));
+        t =
+            THREE.MathUtils.clamp(
+                t,
+                0,
+                1
+            );
 
-        const closestX = corridor.start.x + dx * t;
-        const closestZ = corridor.start.z + dz * t;
+        const closestX =
+            start.x +
+            dx * t;
 
-        const distance = Math.hypot(
-            x - closestX,
-            z - closestZ
-        );
+        const closestZ =
+            start.z +
+            dz * t;
 
-        return distance <= corridor.width / 2 - this.playerRadius;
-    }
-
-    isWalkable(x, z) {
-        for (const room of this.roomRegions) {
-            if (this.isInsideRoom(x, z, room)) {
-                return true;
-            }
-        }
-
-        for (const corridor of this.corridors) {
-            if (this.isInsideCorridor(x, z, corridor)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    collidesWithBox(x, z, collider) {
-        const closestX = Math.max(
-            collider.minX,
-            Math.min(x, collider.maxX)
-        );
-
-        const closestZ = Math.max(
-            collider.minZ,
-            Math.min(z, collider.maxZ)
-        );
-
-        const dx = x - closestX;
-        const dz = z - closestZ;
+        const distance =
+            Math.hypot(
+                x - closestX,
+                z - closestZ
+            );
 
         return (
-            dx * dx + dz * dz <
-            this.playerRadius * this.playerRadius
+            distance <=
+            corridor.width / 2 -
+            this.playerRadius
         );
     }
 
-    collidesWithCircle(x, z, collider) {
-        const dx = x - collider.x;
-        const dz = z - collider.z;
+    // =====================================================
+    // WALKABLE AREA
+    // =====================================================
 
-        const radius =
-            collider.radius + this.playerRadius;
+    isWalkable(
+        x,
+        z
+    ) {
 
-        return dx * dx + dz * dz < radius * radius;
+        // ---------------------------------------------
+        // ROOMS
+        // ---------------------------------------------
+
+        for (
+            const room
+            of this.roomRegions
+        ) {
+
+            if (
+                this.isInsideRoom(
+                    x,
+                    z,
+                    room
+                )
+            ) {
+
+                return true;
+            }
+        }
+
+        // ---------------------------------------------
+        // CORRIDORS
+        // ---------------------------------------------
+
+        for (
+            const corridor
+            of this.corridors
+        ) {
+
+            if (
+                this.isInsideCorridor(
+                    x,
+                    z,
+                    corridor
+                )
+            ) {
+
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    collidesWithProps(x, z) {
-        for (const collider of this.colliders) {
-            if (collider.type === "box") {
-                if (this.collidesWithBox(x, z, collider)) {
+    // =====================================================
+    // BOX COLLISION
+    // =====================================================
+
+    collidesWithBox(
+        x,
+        z,
+        collider
+    ) {
+
+        const halfX =
+            collider.size.x / 2;
+
+        const halfZ =
+            collider.size.z / 2;
+
+        const closestX =
+            THREE.MathUtils.clamp(
+                x,
+                collider.position.x - halfX,
+                collider.position.x + halfX
+            );
+
+        const closestZ =
+            THREE.MathUtils.clamp(
+                z,
+                collider.position.z - halfZ,
+                collider.position.z + halfZ
+            );
+
+        const dx =
+            x - closestX;
+
+        const dz =
+            z - closestZ;
+
+        return (
+            dx * dx +
+            dz * dz
+            <
+            this.playerRadius *
+            this.playerRadius
+        );
+    }
+
+    // =====================================================
+    // CYLINDER COLLISION
+    // =====================================================
+
+    collidesWithCircle(
+        x,
+        z,
+        collider
+    ) {
+
+        const dx =
+            x -
+            collider.position.x;
+
+        const dz =
+            z -
+            collider.position.z;
+
+        const distance =
+            Math.sqrt(
+                dx * dx +
+                dz * dz
+            );
+
+        return (
+            distance <
+            collider.radius +
+            this.playerRadius
+        );
+    }
+
+    // =====================================================
+    // PROP COLLISION
+    // =====================================================
+
+    collidesWithProps(
+        x,
+        z
+    ) {
+
+        for (
+            const collider
+            of this.colliders
+        ) {
+
+            if (
+                !collider.enabled
+            ) {
+                continue;
+            }
+
+            if (
+                collider.type ===
+                "box"
+            ) {
+
+                if (
+                    this.collidesWithBox(
+                        x,
+                        z,
+                        collider
+                    )
+                ) {
+
                     return true;
                 }
             }
 
-            if (collider.type === "circle") {
-                if (this.collidesWithCircle(x, z, collider)) {
+            if (
+                collider.type ===
+                "circle"
+            ) {
+
+                if (
+                    this.collidesWithCircle(
+                        x,
+                        z,
+                        collider
+                    )
+                ) {
+
                     return true;
                 }
             }
@@ -171,89 +373,184 @@ export class CollisionSystem {
         return false;
     }
 
-    canMoveTo(x, z) {
-        if (!this.isWalkable(x, z)) {
+    // =====================================================
+    // FINAL MOVEMENT TEST
+    // =====================================================
+
+    canMoveTo(
+        x,
+        z
+    ) {
+
+        // First, the position must be inside
+        // a legitimate room or corridor.
+
+        if (
+            !this.isWalkable(
+                x,
+                z
+            )
+        ) {
+
             return false;
         }
 
-        if (this.collidesWithProps(x, z)) {
+        // Then check props.
+
+        if (
+            this.collidesWithProps(
+                x,
+                z
+            )
+        ) {
+
             return false;
         }
 
         return true;
     }
 
-    resolveMovement(position, movement) {
-        const result = position.clone();
+    // =====================================================
+    // MOVEMENT RESOLUTION
+    // =====================================================
 
-        const targetX = result.x + movement.x;
+    resolveMovement(
+        position,
+        movement
+    ) {
 
-        if (this.canMoveTo(targetX, result.z)) {
-            result.x = targetX;
+        const result =
+            position.clone();
+
+        // ---------------------------------------------
+        // X
+        // ---------------------------------------------
+
+        const nextX =
+            result.x +
+            movement.x;
+
+        if (
+            this.canMoveTo(
+                nextX,
+                result.z
+            )
+        ) {
+
+            result.x =
+                nextX;
         }
 
-        const targetZ = result.z + movement.z;
+        // ---------------------------------------------
+        // Z
+        // ---------------------------------------------
 
-        if (this.canMoveTo(result.x, targetZ)) {
-            result.z = targetZ;
+        const nextZ =
+            result.z +
+            movement.z;
+
+        if (
+            this.canMoveTo(
+                result.x,
+                nextZ
+            )
+        ) {
+
+            result.z =
+                nextZ;
         }
 
         return result;
     }
 
+    // =====================================================
+    // PLAYER HEIGHT CHECK
+    // =====================================================
+
+    canFitPlayer(
+        x,
+        z,
+        height
+    ) {
+
+        /*
+        For now the Hive has no low ceilings that
+        prevent standing.
+
+        This method exists so crouching can later
+        support vents, low machinery, etc.
+        */
+
+        return true;
+    }
+
+    // =====================================================
+    // DEBUG
+    // =====================================================
+
     debugMeshes(scene) {
-        const group = new THREE.Group();
-        group.name = "CollisionDebug";
 
-        for (const collider of this.colliders) {
-            let geometry;
-
-            if (collider.type === "box") {
-                geometry = new THREE.BoxGeometry(
-                    collider.maxX - collider.minX,
-                    0.08,
-                    collider.maxZ - collider.minZ
-                );
-            } else {
-                geometry = new THREE.CylinderGeometry(
-                    collider.radius,
-                    collider.radius,
-                    0.08,
-                    16
-                );
-            }
-
-            const material = new THREE.MeshBasicMaterial({
+        const material =
+            new THREE.MeshBasicMaterial({
                 color: 0xff0000,
-                transparent: true,
-                opacity: 0.25,
                 wireframe: true
             });
 
-            const mesh = new THREE.Mesh(
-                geometry,
-                material
-            );
+        for (
+            const collider
+            of this.colliders
+        ) {
 
-            if (collider.type === "box") {
-                mesh.position.set(
-                    (collider.minX + collider.maxX) / 2,
-                    0.05,
-                    (collider.minZ + collider.maxZ) / 2
-                );
-            } else {
-                mesh.position.set(
-                    collider.x,
-                    0.05,
-                    collider.z
-                );
+            if (
+                !collider.enabled
+            ) {
+                continue;
             }
 
-            group.add(mesh);
+            if (
+                collider.type ===
+                "box"
+            ) {
+
+                const mesh =
+                    new THREE.Mesh(
+                        new THREE.BoxGeometry(
+                            collider.size.x,
+                            1,
+                            collider.size.z
+                        ),
+                        material
+                    );
+
+                mesh.position.copy(
+                    collider.position
+                );
+
+                scene.add(mesh);
+            }
+
+            if (
+                collider.type ===
+                "circle"
+            ) {
+
+                const mesh =
+                    new THREE.Mesh(
+                        new THREE.CylinderGeometry(
+                            collider.radius,
+                            collider.radius,
+                            1,
+                            20
+                        ),
+                        material
+                    );
+
+                mesh.position.copy(
+                    collider.position
+                );
+
+                scene.add(mesh);
+            }
         }
-
-        scene.add(group);
-
-        return group;
     }
 }
