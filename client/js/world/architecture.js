@@ -765,7 +765,7 @@ export function createRoomArchitecture(
     // FLOOR
     // -----------------------------------------------
 
-    createFloorPattern(
+    addFloorPattern(
         group,
         room,
         materials
