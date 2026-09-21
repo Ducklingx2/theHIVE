@@ -44,141 +44,190 @@ export class World {
         this.decorate();
     }
 
-    createMaterials() {
+createMaterials() {
 
-        this.materials = {
+    this.materials = {
 
-            floor:
-                new THREE.MeshStandardMaterial({
-                    color: 0x3b2410,
-                    roughness: 0.82,
-                    metalness: 0.15
-                }),
+        // =====================================================
+        // HIVE CORE
+        // =====================================================
 
-            centralFloor:
-                new THREE.MeshStandardMaterial({
-                    color: 0x4b2d10,
-                    roughness: 0.72,
-                    metalness: 0.2
-                }),
+        honey: new THREE.MeshStandardMaterial({
+            color: 0xffc12b,
+            roughness: 0.48,
+            metalness: 0.05
+        }),
 
-            ceiling:
-                new THREE.MeshStandardMaterial({
-                    color: 0x100b08,
-                    roughness: 0.95,
-                    metalness: 0.05
-                }),
+        darkHoney: new THREE.MeshStandardMaterial({
+            color: 0xb87912,
+            roughness: 0.55,
+            metalness: 0.08
+        }),
 
-            wall:
-                new THREE.MeshStandardMaterial({
-                    color: 0x342116,
-                    roughness: 0.76,
-                    metalness: 0.12
-                }),
+        black: new THREE.MeshStandardMaterial({
+            color: 0x17130b,
+            roughness: 0.32,
+            metalness: 0.65
+        }),
 
-            darkWall:
-                new THREE.MeshStandardMaterial({
-                    color: 0x17110d,
-                    roughness: 0.82,
-                    metalness: 0.22
-                }),
+        blackSoft: new THREE.MeshStandardMaterial({
+            color: 0x29241b,
+            roughness: 0.42,
+            metalness: 0.5
+        }),
 
-            corridorFloor:
-                new THREE.MeshStandardMaterial({
-                    color: 0x2c1b0d,
-                    roughness: 0.75,
-                    metalness: 0.18
-                }),
+        // =====================================================
+        // ARCHITECTURE
+        // =====================================================
 
-            corridorWall:
-                new THREE.MeshStandardMaterial({
-                    color: 0x21160f,
-                    roughness: 0.8,
-                    metalness: 0.2
-                }),
+        floor: new THREE.MeshStandardMaterial({
+            color: 0xe2a91f,
+            roughness: 0.58,
+            metalness: 0.12
+        }),
 
-            accent:
-                new THREE.MeshStandardMaterial({
-                    color: 0xffa51f,
-                    emissive: 0xff7a00,
-                    emissiveIntensity: 1.4,
-                    roughness: 0.3,
-                    metalness: 0.35
-                }),
+        centralFloor: new THREE.MeshStandardMaterial({
+            color: 0xf2bd2d,
+            roughness: 0.48,
+            metalness: 0.16
+        }),
 
-            light:
-                new THREE.MeshStandardMaterial({
-                    color: 0xffc04a,
-                    emissive: 0xff8a00,
-                    emissiveIntensity: 3,
-                    roughness: 0.2
-                }),
+        ceiling: new THREE.MeshStandardMaterial({
+            color: 0x18140e,
+            roughness: 0.7,
+            metalness: 0.25
+        }),
 
-            darkWood:
-                new THREE.MeshStandardMaterial({
-                    color: 0x24150b,
-                    roughness: 0.95
-                }),
+        wall: new THREE.MeshStandardMaterial({
+            color: 0xf0b928,
+            roughness: 0.5,
+            metalness: 0.12
+        }),
 
-            wood:
-                new THREE.MeshStandardMaterial({
-                    color: 0x684019,
-                    roughness: 0.88
-                }),
+        darkWall: new THREE.MeshStandardMaterial({
+            color: 0x17130b,
+            roughness: 0.45,
+            metalness: 0.55
+        }),
 
-            machine:
-                new THREE.MeshStandardMaterial({
-                    color: 0x302a23,
-                    roughness: 0.45,
-                    metalness: 0.65
-                }),
+        corridorFloor: new THREE.MeshStandardMaterial({
+            color: 0xc88d16,
+            roughness: 0.58,
+            metalness: 0.18
+        }),
 
-            metal:
-                new THREE.MeshStandardMaterial({
-                    color: 0x5d554a,
-                    roughness: 0.38,
-                    metalness: 0.82
-                }),
+        corridorWall: new THREE.MeshStandardMaterial({
+            color: 0xe2a91f,
+            roughness: 0.5,
+            metalness: 0.12
+        }),
 
-            plant:
-                new THREE.MeshStandardMaterial({
-                    color: 0x4f6b2c,
-                    roughness: 0.85
-                }),
+        // =====================================================
+        // ACCENTS / LIGHTS
+        // =====================================================
 
-            plantStem:
-                new THREE.MeshStandardMaterial({
-                    color: 0x384a1c,
-                    roughness: 0.9
-                }),
+        accent: new THREE.MeshStandardMaterial({
+            color: 0xffb51b,
+            emissive: 0xff7a00,
+            emissiveIntensity: 1.5,
+            roughness: 0.3,
+            metalness: 0.25
+        }),
 
-            waterTank:
-                new THREE.MeshStandardMaterial({
-                    color: 0x30434b,
-                    roughness: 0.32,
-                    metalness: 0.72
-                }),
+        light: new THREE.MeshStandardMaterial({
+            color: 0xffe18a,
+            emissive: 0xffb21c,
+            emissiveIntensity: 3.5,
+            roughness: 0.18,
+            metalness: 0.1
+        }),
 
-            water:
-                new THREE.MeshStandardMaterial({
-                    color: 0x26758a,
-                    emissive: 0x0b3945,
-                    emissiveIntensity: 1,
-                    roughness: 0.2,
-                    metalness: 0.3
-                }),
+        glow: new THREE.MeshStandardMaterial({
+            color: 0xffd45a,
+            emissive: 0xffa800,
+            emissiveIntensity: 2.2,
+            roughness: 0.3,
+            metalness: 0.05
+        }),
 
-            queenPlatform:
-                new THREE.MeshStandardMaterial({
-                    color: 0x5a2d0d,
-                    emissive: 0x3b1603,
-                    emissiveIntensity: 0.7,
-                    roughness: 0.5,
-                    metalness: 0.3
-                })
-        };
-    }
+        // =====================================================
+        // MATERIALS / PROPS
+        // =====================================================
 
+        darkWood: new THREE.MeshStandardMaterial({
+            color: 0x24180b,
+            roughness: 0.85
+        }),
+
+        wood: new THREE.MeshStandardMaterial({
+            color: 0x8a591c,
+            roughness: 0.72
+        }),
+
+        machine: new THREE.MeshStandardMaterial({
+            color: 0x24221d,
+            roughness: 0.38,
+            metalness: 0.78
+        }),
+
+        metal: new THREE.MeshStandardMaterial({
+            color: 0x68635a,
+            roughness: 0.28,
+            metalness: 0.9
+        }),
+
+        metalDark: new THREE.MeshStandardMaterial({
+            color: 0x302e29,
+            roughness: 0.3,
+            metalness: 0.85
+        }),
+
+        // =====================================================
+        // NATURE
+        // =====================================================
+
+        plant: new THREE.MeshStandardMaterial({
+            color: 0x628d36,
+            roughness: 0.72
+        }),
+
+        plantStem: new THREE.MeshStandardMaterial({
+            color: 0x3b5420,
+            roughness: 0.8
+        }),
+
+        // =====================================================
+        // WATER
+        // =====================================================
+
+        waterTank: new THREE.MeshStandardMaterial({
+            color: 0x3f4946,
+            roughness: 0.28,
+            metalness: 0.82
+        }),
+
+        water: new THREE.MeshStandardMaterial({
+            color: 0x54a8ad,
+            emissive: 0x164c4f,
+            emissiveIntensity: 1.1,
+            roughness: 0.15,
+            metalness: 0.35
+        }),
+
+        // =====================================================
+        // QUEEN
+        // =====================================================
+
+        queenPlatform: new THREE.MeshStandardMaterial({
+            color: 0xffc52f,
+            emissive: 0x7d4100,
+            emissiveIntensity: 0.65,
+            roughness: 0.38,
+            metalness: 0.25
+        })
+    };
+}
+    
     createGround() {
 
         const groundMaterial =
